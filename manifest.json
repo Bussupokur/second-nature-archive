@@ -1,0 +1,6 @@
+[
+  { "id": 51, "title": "Beyond Survival", "cls": "main", "len": "M", "file": "chapters/051-beyond-survival.md" },
+  { "id": 52, "title": "The Comfortable Extinction", "cls": "main", "len": "M", "file": "chapters/052-the-comfortable-extinction.md" },
+  { "id": "NT-3184", "title": "Field transmission — rogue planet", "cls": "nasaat", "len": "M", "external": "https://second-nature.spiekerbas.xyz/nasaat/report-001.html" },
+  { "id": "DM-0791", "title": "Field transmission — HD 206893 B", "cls": "nasaat", "len": "L", "external": "https://second-nature.spiekerbas.xyz/nasaat/report-002.html" }
+]

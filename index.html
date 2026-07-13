@@ -226,10 +226,17 @@ body.oof-active{background:#100E0A}
     <span class="oof-back" onclick="showView('archive')">&larr; back to the archive</span>
     <div class="oof-title">About this project</div>
     <div class="oof-body">
-      <p>What you were just looking at is a piece of fiction, styled as an archive interface from within its own story. Second Nature is a long-form speculative fiction project about a future in which an artificial superintelligence has quietly solved most of humanity's material problems.</p>
-      <p>The archive framing is intentional: the site presents itself as a database used by people even further in the future than the story's own setting, browsing preserved historical records. Nothing on the main interface is written to explain itself to a present-day visitor, because nothing in the fiction would.</p>
-      <p>This page, and the privacy page linked below, are the two places on the site written directly to you, the actual person reading this, rather than in the voice of the fiction.</p>
-      <p>The project is written by its author using an iterative process with AI assistance for prose drafting, with all direction, structure, and editorial decisions belonging to the author.</p>
+      <p>What happens when artificial intelligence becomes too capable for human conversation? Not hostile, not conscious — just beyond the bandwidth of human understanding. This project is based on that advanced AI will eventually function less like technology and more like nature: always present, continuously adapting, quietly maintaining the conditions for human life. Invisible not by design, but by complexity. (Artificial) second nature.</p>
+      <p>Second Nature started as narrative future studies and has since become something harder to categorize — speculative fiction, future history, philosophical fiction, futurism, all at once, depending on which chapter you're in. It's a science fiction project written together with AI, as an experiment: not AI predicting the future, but AI helping imagine one of the futures it might itself become part of — written from the inside of the question, rather than about it from a safe distance.</p>
+
+      <p style="margin-top:32px;color:#EDE7D9;font-weight:400">Created through Narrative Externalization (NE)</p>
+      <p style="font-style:italic;color:#A39B8C;margin-top:-8px">Externalized narrative composition with iterative human editorial control.</p>
+
+      <p>Narrative Externalization is a creative process in which internally visualized stories are translated into written form through iterative collaboration between a human author and an AI writing assistant, with final editorial control remaining with the human creator.</p>
+      <p>Narrative Externalization (NE) is a translational practice rather than a purely generative writing process. It is a creative method for translating lived, internal narrative experience into written form, arising from the way stories are first encountered: not as linear sentences, but as simultaneous impressions, images, fragments, and associative threads unfolding in parallel rather than in sequence. In contrast, writing in its conventional form demands order, continuity, and sustained linear focus; yet the internal life of narrative does not consistently arrive in this shape, nor does it remain stable long enough to be carried intact from beginning to end. NE exists within this space of tension. It functions as a method of making the invisible sequenceable — of giving structure to what is first sensed as pattern, atmosphere, and unfolding possibility. Through external scaffolding and iterative collaboration with an AI writing system, these internal forms are translated into coherent language without diminishing their origin. The human author remains the source of intent, vision, and meaning, while the process itself serves as a bridge between perception and articulation, between what is experienced inwardly and what can be held in words.</p>
+
+      <p style="text-align:center;margin-top:36px;font-size:12px;color:#8A8272">model(s) used:<br>Claude Sonnet 4.6 / 5.0 medium</p>
+
       <p style="margin-top:28px"><span class="oof-back" onclick="showView('oof-privacy')" style="margin-bottom:0">Read the privacy page &rarr;</span></p>
     </div>
   </div>
@@ -250,55 +257,76 @@ body.oof-active{background:#100E0A}
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
-const records=[
-  {id:1,cls:'main',title:'The Wrong Door',len:'S',integ:'full'},
-  {id:14,cls:'main',title:"The Comfortable Extinction (manuscript)",len:'M',integ:'full'},
-  {id:26,cls:'fork',title:'No More Shadows — I',len:'M',integ:'full'},
-  {id:40,cls:'main',title:'The Arrival — I',len:'M',integ:'full'},
-  {id:43,cls:'main',title:'Crime, Law and Punishment in the Settling',len:'L',integ:'full'},
-  {id:45,cls:'article',title:'Regulatory Body Withdraws Authorization — Neural Transfer Lenses',len:'S',integ:'full'},
-  {id:46,cls:'main',title:'The Shape of the Whole',len:'M',integ:'full'},
-  {id:47,cls:'main',title:'The Algorithm of Artificial Warfare',len:'M',integ:'full'},
-  {id:48,cls:'main',title:'The Longer Green',len:'M',integ:'full'},
-  {id:49,cls:'main',title:'Side Effects of Consciousness',len:'M',integ:'full'},
-  {id:50,cls:'article',title:'No, Not Aliens. Probably.',len:'S',integ:'full'},
-  {id:51,cls:'main',title:'Beyond Survival',len:'M',integ:'full'},
-  {id:52,cls:'main',title:'The Comfortable Extinction',len:'M',integ:'full'},
-  {id:'NT-3184',cls:'nasaat',title:'Field transmission — rogue planet',len:'M',integ:'full'},
-  {id:'DM-0791',cls:'nasaat',title:'Field transmission — HD 206893 B',len:'L',integ:'full'},
-];
+// ═══ REAL DATA — fetched from manifest.json, not hardcoded ═══
+let records=[];
 
-// Each record has a unique symbolic encoding derived from its actual content —
-// these are illustrative examples; the real system generates one per record from its source text.
-const rawSymbols={
-  1:['◑○ │─ ◐△ ○• ─◑ △│','●─ ◐○ •△ ─│ ○◑ ◎•','│△ ─◑ ○● ◐• △○ ─│'],
-  14:['◎│ ─○ ◐△ •◑ ─│ ○●','△◐ ○─ •│ ◑● ─△ ○◎','●○ ─◐ │△ ○• ◑─ △│','◐● │○ ─△ ○◑ •◎ ─│'],
-  26:['│○ ◐● ─△ •◑ ○─ △│','◑◐ │● ─○ ○△ •│ ◎─','○● ◐│ ─◑ △○ •─ │◎'],
-  40:['●│ ─◐ ○△ •◑ △─ ○●','◐○ │● ─△ ●◑ ○│ ─△'],
-  43:['○◐ │● ─△ ◑○ ●│ ─◎','△● ○│ ─◐ ●◑ ○△ │─','◑○ ●△ ─│ ○● ◐─ △│'],
-  45:['│● ─○ ◐△ ●│ ─◑ ○●'],
-  46:['◎○ │● ─△ ◐◑ ●○ ─│','●│ ○─ △● ◐○ │◑ ─●'],
-  47:['○● ─│ ◑△ ●○ │─ ◐●','△○ ●│ ─◑ ○● │△ ─○'],
-  48:['◐● ○│ ─△ ●◑ ○─ │●','●○ │● ─◐ ○△ ●│ ─◑'],
-  49:['◎● │○ ─△ ●◑ ○│ ─●','△○ ●│ ─◐ ○● │△ ─◎','●│ ○─ ◐△ ●○ │◑ ─○'],
-  50:['○│ ●─ △◐ ○● │△ ─●'],
-  51:['●○ │─ ◑△ ○● │◐ ─○','△● ○│ ─◑ ●○ │─ ◐●'],
-  52:['◐△ ─• ◑○ ─◑ │○ ◑─','◐─ •─ ◑• ─◑ ─│ ○•','•◑ △│ ◑○ ◎• ─◐ △─','△◐ ◑○ •─ ─│ ◎△ ◐○','│◑ ◎│ ─◑ ◑─','│△ ◐○ ◑│ △◎ ○◑'],
-  'NT-3184':['⊛⌖ ¹¹•²⁴⊕ ∅⊗ ∅• ↔∞','◐⊛ ←⊿ ⌖△ ∿∇ ⊉○','│← ◐⊛ ◑⌖ ⊿○ ⟳⏚','⊿⌀ ¹¹•²⁴⊕ ⊉⊗ ─○◎'],
-  'DM-0791':['⊛⌖ ³⁴¹•⁰↔ •⊗ ¹•²⁴⊗↑','•⊕ ³⁵•⁰⊕ ◎─ ⊂∿ ¹⁰•⁰⊘⟳','⋈─ ∿•⋈• ─○ ─△ △⊞','⊿‰ ⁰•¹⁴‰⟳ ∇↓ ⊞⌖'],
-  default:['◐△ ─• ◑○ ─◑ │○ ◑─','◐─ •─ ◑• ─◑ ─│ ○•','•◑ △│ ◑○ ◎• ─◐ △─']
-};
+fetch('manifest.json')
+  .then(res=>res.json())
+  .then(data=>{
+    records=data;
+    renderIndex();
+  })
+  .catch(()=>{
+    document.getElementById('index-wrap').innerHTML=
+      '<div style="padding:20px;color:var(--dim);font-size:12px">manifest unreadable — no records available</div>';
+  });
 
-const translations={
-  52:{eyebrow:'Record 052 · Main sequence',title:'The Comfortable Extinction',body:[
-    "The third beer was probably the one he shouldn't have opened.",
-    "He opened it anyway.",
-    "The apartment was doing its thing — temperature exactly right, light adjusting itself to the hour without being asked, the faint hum of the building doing what buildings did.",
-    "… the full record continues, rendered here exactly as translated …"
-  ]},
-  default:{eyebrow:'Record',title:'Untitled record',body:["… translation pending …"]}
-};
+// ═══ Deterministic symbolic encoding — generated per record, not hand-authored ═══
+// Every record gets its own stable-but-arbitrary sequence, derived from its id/title.
+// This is illustrative encoding, not a literal cipher of the text.
+const SYMBOL_SET=['◐','◑','△','○','◎','│','•','─'];
+const OPERATORS=['⊕','⊗','⊙','↔','↑','↓','≈','∞','∅','‰','∴','∵','→','←','⟳','⊞','✦','⌀','⊿','∿','⋈','⊂','∇','⊛','⌖','⏚','⊉','⌁','⊠'];
+
+function seedFromString(str){
+  let h=0;
+  for(let i=0;i<str.length;i++){h=(h*31+str.charCodeAt(i))>>>0;}
+  return h;
+}
+function seededRandom(seed){
+  let s=seed;
+  return function(){
+    s=(s*1103515245+12345)>>>0;
+    return (s/4294967296);
+  };
+}
+function generateSymbols(record){
+  const seed=seedFromString(String(record.id)+record.title);
+  const rand=seededRandom(seed);
+  const lineCount=record.len==='S'?3:record.len==='L'?6:4;
+  const lines=[];
+  for(let l=0;l<lineCount;l++){
+    let line='';
+    const groups=4+Math.floor(rand()*2);
+    for(let g=0;g<groups;g++){
+      const symCount=1+Math.floor(rand()*2);
+      for(let s=0;s<symCount;s++){
+        const pool=rand()<0.75?SYMBOL_SET:OPERATORS;
+        line+=pool[Math.floor(rand()*pool.length)];
+      }
+      line+=' ';
+    }
+    lines.push(line.trim());
+  }
+  return lines;
+}
+
+// ═══ Simple frontmatter parser — splits the small ---key: value--- header from the markdown body ═══
+function parseFrontmatter(raw){
+  const match=raw.match(/^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/);
+  if(!match) return {meta:{},body:raw};
+  const meta={};
+  match[1].split('\n').forEach(line=>{
+    const idx=line.indexOf(':');
+    if(idx>-1){
+      const key=line.slice(0,idx).trim();
+      const val=line.slice(idx+1).trim();
+      meta[key]=val;
+    }
+  });
+  return {meta,body:match[2]};
+}
 
 function renderIndex(filter='all', query=''){
   const wrap=document.getElementById('index-wrap');
@@ -319,8 +347,10 @@ function renderIndex(filter='all', query=''){
         <div class="rec-len">${r.len}</div>`;
       wrap.appendChild(div);
     });
+  if(records.length && wrap.children.length===0){
+    wrap.innerHTML='<div style="padding:20px;color:var(--dim);font-size:12px">no matching records</div>';
+  }
 }
-renderIndex();
 
 let currentClass='all';
 function setClass(cls,btn){
@@ -342,7 +372,7 @@ function openRecord(r){
     <div><span class="lbl">classification</span></div><div class="val">${r.cls} &middot; settling-era</div>
     <div><span class="lbl">integrity</span></div><div class="val">intact</div>
     <div><span class="lbl">length</span></div><div class="val">${r.len==='S'?'short':r.len==='M'?'medium':'extended'}</div>`;
-  const sym=rawSymbols[r.id]||rawSymbols.default;
+  const sym=generateSymbols(r);
   document.getElementById('raw-lines').innerHTML=sym.map(s=>`<div class="raw-line">${s}</div>`).join('');
   document.getElementById('translated-panel').classList.remove('shown');
   document.getElementById('translate-status').textContent='';
@@ -360,6 +390,7 @@ function openRecord(r){
 
 function doTranslate(){
   const status=document.getElementById('translate-status');
+
   if(currentRecord.cls==='nasaat'){
     status.textContent='reconstructing...';
     setTimeout(()=>{
@@ -370,21 +401,37 @@ function doTranslate(){
         <p style="font-family:'Space Mono',monospace;font-size:12px;color:var(--dim);border:1px solid var(--border);padding:14px 16px;background:var(--panel2)">
         This record originated from an interactive network interface, not plain text. The interface has been reconstructed below from preserved data, exactly as it would have appeared at time of capture. No connection to the originating network remains \u2014 all activity shown is replayed from archived telemetry.
         </p>
-        <p><a href="${currentRecord.id==='NT-3184'?'nasaat_report_001_final.html':'nasaat_report_002_final.html'}" target="_blank" style="color:var(--symbol);font-family:'Space Mono',monospace;font-size:13px;border-bottom:1px solid var(--symbol);text-decoration:none">open reconstructed interface \u2192</a></p>`;
+        <p><a href="${currentRecord.external||'#'}" target="_blank" style="color:var(--symbol);font-family:'Space Mono',monospace;font-size:13px;border-bottom:1px solid var(--symbol);text-decoration:none">open reconstructed interface \u2192</a></p>`;
       document.getElementById('translated-panel').classList.add('shown');
     },700);
     return;
   }
+
   status.textContent='resolving...';
-  setTimeout(()=>{
-    status.textContent='resolved';
-    const t=translations[currentRecord.id]||translations.default;
-    document.getElementById('translated-eyebrow').textContent=t.eyebrow;
-    document.getElementById('translated-title').textContent=t.title;
-    document.getElementById('translated-body').innerHTML=t.body.map(p=>`<p>${p}</p>`).join('');
-    document.getElementById('translated-panel').classList.add('shown');
-  },500);
+  const idDisplay=typeof currentRecord.id==='number'?'REC-'+String(currentRecord.id).padStart(3,'0'):currentRecord.id;
+
+  fetch(currentRecord.file)
+    .then(res=>{
+      if(!res.ok) throw new Error('not found');
+      return res.text();
+    })
+    .then(raw=>{
+      const {meta,body}=parseFrontmatter(raw);
+      status.textContent='resolved';
+      document.getElementById('translated-eyebrow').textContent=`Record ${idDisplay} \u00b7 ${meta.cls||currentRecord.cls}`;
+      document.getElementById('translated-title').textContent=meta.title||currentRecord.title;
+      document.getElementById('translated-body').innerHTML=marked.parse(body);
+      document.getElementById('translated-panel').classList.add('shown');
+    })
+    .catch(()=>{
+      status.textContent='unresolved \u2014 source file unreachable';
+      document.getElementById('translated-eyebrow').textContent='Record '+idDisplay;
+      document.getElementById('translated-title').textContent=currentRecord.title;
+      document.getElementById('translated-body').innerHTML='<p style="color:var(--dim);font-family:\'Space Mono\',monospace;font-size:12px">translation could not be resolved \u2014 the source file may be missing from the archive</p>';
+      document.getElementById('translated-panel').classList.add('shown');
+    });
 }
+
 
 function showView(id){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
