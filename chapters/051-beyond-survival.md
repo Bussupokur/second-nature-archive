@@ -1,5 +1,3 @@
-# Beyond Survival
-
 *Reading time: ~8 minutes*
 
 ---
