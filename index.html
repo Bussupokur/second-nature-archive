@@ -426,7 +426,13 @@ function playIntroNext(){
   const delay=item.v?900:1400;
   setTimeout(playIntroNext,delay);
 }
-setTimeout(playIntroNext,700);
+
+// arriving with #archive skips the intro entirely and opens the archive directly
+if(window.location.hash==='#archive'){
+  showView('archive');
+} else {
+  setTimeout(playIntroNext,700);
+}
 
 function showIntroCompile(){
   const block=document.createElement('div');
