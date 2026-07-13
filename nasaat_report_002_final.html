@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nasaat — DM-0791v1/M1-4TVX.2</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--space:#050810;--panel:#0B1628;--panel2:#0D1E35;
+--border:#1A3A5C;--border2:#0F2540;
+--data:#4FC3F7;--body:#C8DCF0;--symbol:#7FDBFF;
+--flag:#FF6B35;--dim:#3A5570;--white:#E8F4FD;--green:#4ADE80;
+}
+html,body{height:100%;background:var(--space);color:var(--body);font-family:'IBM Plex Sans',sans-serif;overflow:hidden}
+body{display:flex;flex-direction:column}
+button{cursor:pointer;font-family:'Space Mono',monospace;border:none;background:none}
+
+/* HEADER */
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;padding:10px 20px;border-bottom:1px solid var(--border);background:var(--panel);gap:8px;flex-shrink:0}
+.logo{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.12em;color:var(--symbol)}
+.report-id{font-family:'Space Mono',monospace;font-size:10px;color:var(--dim)}
+.meta-wrap{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.meta-item{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim)}
+.meta-item span{color:var(--data)}
+.live-badge{display:flex;align-items:center;gap:5px;font-family:'Space Mono',monospace;font-size:9px;color:var(--green);border:1px solid rgba(74,222,128,0.3);padding:3px 8px}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:blink 1.4s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* LAYOUT */
+.main{display:grid;grid-template-columns:1fr 300px 360px;flex:1;overflow:hidden;min-height:0}
+
+/* ── LEFT: VIEWER WINDOW ── */
+.viewer{display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden;min-height:0}
+
+.view-tabs{display:flex;background:var(--panel);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto}
+.view-tabs::-webkit-scrollbar{height:0}
+.vt-btn{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.08em;color:var(--dim);padding:7px 11px;border-right:1px solid var(--border);transition:all .15s;text-transform:uppercase;white-space:nowrap;flex-shrink:0}
+.vt-btn:hover{color:var(--data);background:rgba(79,195,247,0.05)}
+.vt-btn.active{color:var(--data);background:rgba(79,195,247,0.08);border-bottom:2px solid var(--data)}
+.viewer-count{font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);padding:7px 10px;border-left:1px solid var(--border);margin-left:auto;white-space:nowrap;flex-shrink:0}
+.viewer-count span{color:var(--green)}
+
+/* the view area */
+.view-area{flex:1;position:relative;overflow:hidden;min-height:0}
+canvas#tracker{position:absolute;inset:0;width:100%;height:100%}
+canvas#cam-canvas{position:absolute;inset:0;width:100%;height:100%;display:none}
+canvas#static-burst{position:absolute;inset:0;width:100%;height:100%;opacity:0;pointer-events:none;z-index:5}
+
+/* tracker overlays */
+.tracker-tag{position:absolute;top:10px;left:10px;font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);background:rgba(5,8,16,0.75);padding:3px 8px;border:1px solid var(--border);letter-spacing:0.1em;z-index:4}
+.drone-tip{position:absolute;background:rgba(5,8,16,0.92);border:1px solid var(--data);padding:6px 10px;font-family:'Space Mono',monospace;font-size:8px;color:var(--data);pointer-events:none;display:none;white-space:nowrap;z-index:10;line-height:1.6}
+
+/* camera overlays */
+.cam-tag{position:absolute;top:10px;left:10px;font-family:'Space Mono',monospace;font-size:9px;color:rgba(200,220,240,0.55);background:rgba(5,8,16,0.6);padding:3px 8px;border:1px solid rgba(26,58,92,0.5);letter-spacing:0.1em;z-index:4;display:none}
+.cam-status-center{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;z-index:4}
+.cam-status-name{font-family:'Space Mono',monospace;font-size:11px;color:rgba(200,220,240,0.45);letter-spacing:0.1em}
+.cam-status-state{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.16em;text-transform:uppercase}
+.st-offline{color:rgba(255,107,53,0.55)}
+.st-connecting{color:rgba(79,195,247,0.45);animation:flicker 2.2s infinite}
+@keyframes flicker{0%,100%{opacity:1}40%{opacity:.3}50%{opacity:.8}60%{opacity:.25}70%{opacity:.7}}
+
+/* spectrum slider overlay */
+.spec-overlay{position:absolute;top:10px;right:10px;display:none;z-index:4;pointer-events:none}
+.spec-offline-tag{font-family:'Space Mono',monospace;font-size:8px;color:rgba(200,220,240,0.5);background:rgba(5,8,16,0.75);padding:3px 8px;border:1px solid rgba(26,58,92,0.5);letter-spacing:0.1em}
+.spec-slider-overlay{position:absolute;bottom:0;left:0;right:0;display:none;flex-direction:column;align-items:center;padding:14px 20px 18px;z-index:4;background:linear-gradient(transparent,rgba(5,8,16,0.85));pointer-events:auto}
+.spec-label-bar{display:flex;justify-content:space-between;width:82%;margin-bottom:7px;font-family:'Space Mono',monospace;font-size:7px;color:var(--dim);letter-spacing:0.08em}
+.spec-slider-wrap{width:82%}
+.spec-name{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:0.1em;margin-bottom:10px;text-align:center}
+input.spec-range{width:100%;appearance:none;height:3px;border-radius:2px;outline:none;cursor:pointer;background:linear-gradient(90deg,#8B0000,#FF4500,#FF8C00,#FFD700,#00FF00,#00BFFF,#0000FF,#8B00FF)}
+input.spec-range::-webkit-slider-thumb{appearance:none;width:14px;height:14px;border-radius:50%;background:var(--white);border:2px solid var(--dim);cursor:not-allowed;opacity:0.5}
+
+/* instruments */
+.instruments{background:rgba(5,8,16,0.92);border-top:1px solid var(--border);padding:11px 14px;display:grid;grid-template-columns:1fr 1fr;gap:9px;flex-shrink:0}
+.inst{display:flex;flex-direction:column;gap:3px}
+.inst-label{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:0.12em;color:var(--dim);text-transform:uppercase;display:flex;justify-content:space-between}
+.inst-val{font-family:'Space Mono',monospace;font-size:9px;color:var(--data)}
+.inst-flag{color:var(--flag)}
+.bar-track{height:3px;background:rgba(26,58,92,0.5);border-radius:2px;overflow:hidden}
+.bar-fill{height:100%;border-radius:2px;transition:width .4s ease}
+.bar-grav{background:var(--data)}.bar-therm{background:#81C784}.bar-chem{background:var(--flag)}
+.waveform{height:20px;overflow:hidden}
+
+/* ── MIDDLE: TRANSMISSION + REQUESTS ── */
+.mid-panel{border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.panel-tabs{display:flex;border-bottom:1px solid var(--border);background:var(--panel);flex-shrink:0}
+.tab-btn{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.08em;color:var(--dim);padding:9px 0;transition:all .2s;text-transform:uppercase;flex:1;text-align:center;border-right:1px solid var(--border)}
+.tab-btn:last-child{border-right:none}
+.tab-btn:hover{color:var(--data)}
+.tab-btn.active{color:var(--data);background:rgba(79,195,247,0.06);border-bottom:2px solid var(--data)}
+.panel-content{flex:1;overflow-y:auto;display:none;min-height:0}
+.panel-content.active{display:flex;flex-direction:column}
+.panel-content::-webkit-scrollbar{width:2px}
+.panel-content::-webkit-scrollbar-thumb{background:var(--border)}
+
+.tx-header{padding:12px 14px 10px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--panel);z-index:5;flex-shrink:0}
+.tx-title{font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:2px}
+.tx-id{font-family:'Space Mono',monospace;font-size:10px;color:var(--symbol)}
+.tx-lines{padding:6px 0}
+.tx-line{padding:4px 14px;opacity:0;animation:fadein .5s forwards}
+.tx-line:hover{background:rgba(79,195,247,0.04)}
+.tx-sym{font-family:'Space Mono',monospace;font-size:10px;color:var(--symbol);line-height:1.5;letter-spacing:0.02em}
+.tx-gl{font-family:'Space Mono',monospace;font-size:7px;color:var(--dim);line-height:1.5;margin-top:1px}
+.tx-div{height:1px;background:var(--border);margin:5px 14px}
+@keyframes fadein{to{opacity:1}}
+
+.req-panel{padding:14px;display:flex;flex-direction:column;gap:11px;flex:1;overflow-y:auto}
+.req-title{font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:2px}
+.req-sub{font-size:11px;color:var(--body);line-height:1.5;font-weight:300}
+.req-field{display:flex;flex-direction:column;gap:4px}
+.req-field label{font-family:'Space Mono',monospace;font-size:7px;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase}
+.req-field select,.req-field input{background:var(--panel2);border:1px solid var(--border);color:var(--body);font-family:'Space Mono',monospace;font-size:9px;padding:7px 9px;width:100%;outline:none;appearance:none}
+.req-field select:focus,.req-field input:focus{border-color:var(--data)}
+.req-field input::placeholder{color:var(--dim)}
+.req-submit{background:rgba(79,195,247,0.08);border:1px solid var(--data);color:var(--data);font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;padding:9px;width:100%;text-transform:uppercase;transition:all .2s}
+.req-submit:hover{background:rgba(79,195,247,0.15)}
+.req-confirm{background:rgba(74,222,128,0.06);border:1px solid var(--green);color:var(--green);font-family:'Space Mono',monospace;font-size:9px;padding:9px 11px;line-height:1.6;display:none}
+.req-recent{border-top:1px solid var(--border);padding-top:10px}
+.req-recent-title{font-family:'Space Mono',monospace;font-size:7px;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:7px}
+.req-item{padding:5px 0;border-bottom:1px solid var(--border2);display:flex;justify-content:space-between;gap:8px}
+.req-item:last-child{border-bottom:none}
+.req-item-text{font-family:'Space Mono',monospace;font-size:8px;color:var(--body);line-height:1.4}
+.req-item-time{font-family:'Space Mono',monospace;font-size:7px;color:var(--dim);white-space:nowrap;margin-top:1px}
+
+/* ── RIGHT: REPORT ── */
+.report-col{display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.report-header{padding:12px 16px 10px;border-bottom:1px solid var(--border);background:var(--panel);flex-shrink:0}
+.report-header-title{font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:2px}
+.report-header-id{font-family:'Space Mono',monospace;font-size:10px;color:var(--white)}
+.report-body{flex:1;overflow-y:auto;padding:16px}
+.report-body::-webkit-scrollbar{width:2px}
+.report-body::-webkit-scrollbar-thumb{background:var(--border)}
+.report-body h2{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.12em;color:var(--dim);text-transform:uppercase;margin:15px 0 7px;padding-bottom:5px;border-bottom:1px solid var(--border)}
+.report-body h2:first-child{margin-top:0}
+.report-body p{font-size:12px;line-height:1.85;color:var(--body);margin-bottom:9px;font-weight:300}
+.lead{font-size:13px!important;color:var(--white)!important;font-weight:400!important}
+.flag-block{background:rgba(255,107,53,0.06);border-left:2px solid var(--flag);padding:7px 11px;margin:8px 0;font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);line-height:1.6}
+.flag-block strong{color:var(--flag);display:block;margin-bottom:2px}
+
+/* MOBILE */
+@media(max-width:960px){
+  html,body{height:auto;overflow:auto}
+  .main{grid-template-columns:1fr;overflow:visible}
+  .viewer{height:500px;border-right:none;border-bottom:1px solid var(--border)}
+  .mid-panel{height:520px;border-right:none;border-bottom:1px solid var(--border)}
+  .report-col{min-height:400px}
+}
+@media(max-width:520px){
+  .instruments{grid-template-columns:1fr}
+  .vt-btn{padding:6px 8px;font-size:7px}
+  header{padding:8px 12px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center;gap:10px">
+    <a href="nasaat_platform.html" style="font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);text-decoration:none;border:1px solid var(--border);padding:4px 8px;transition:all .2s" onmouseover="this.style.color='var(--data)';this.style.borderColor='var(--data)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border)'">&larr; Registry</a>
+    <div class="logo">Nasaat</div>
+  </div>
+  <div class="report-id" onclick="openDroneTab()" style="cursor:pointer;border-bottom:1px solid var(--border);display:inline-block">DM-0791v1/M1-4TVX.2</div>
+  <div class="meta-wrap">
+    <div class="live-badge"><div class="live-dot"></div>live</div>
+    <div class="meta-item">Report <span>#002 · second transmission this encounter</span></div>
+    <div class="meta-item">Read <span id="reads">31,847</span></div>
+    <div class="meta-item">Shared <span>8,203</span></div>
+    <div class="meta-item">Saved <span>12,441</span></div>
+    <div class="meta-item">Subscribed <span>19,382</span></div>
+    <div class="meta-item">Rating <span>4.9</span></div>
+    <div class="meta-item">More from drone <span>1</span></div>
+  </div>
+</header>
+
+<div class="main">
+
+<!-- LEFT: VIEWER WINDOW -->
+<div class="viewer">
+  <div class="view-tabs">
+    <button class="vt-btn active" onclick="setView('tracker',this)">Tracker</button>
+    <button class="vt-btn" onclick="setView('vis',this)">Visible</button>
+    <button class="vt-btn" onclick="setView('ir',this)">Infrared</button>
+    <button class="vt-btn" onclick="setView('uv',this)">UV</button>
+    <button class="vt-btn" onclick="setView('radio',this)">Radio</button>
+    <button class="vt-btn" onclick="setView('therm',this)">Thermal</button>
+    <button class="vt-btn" onclick="setView('spec',this)">Mod. Spectrum</button>
+    <div class="viewer-count"><span id="viewers">47</span> watching</div>
+  </div>
+
+  <div class="view-area" id="view-area">
+    <!-- tracker canvas (default) -->
+    <canvas id="tracker"></canvas>
+    <div class="tracker-tag" id="tracker-tag">ORBITAL TRACKER · DM-0791v1/M1-4TVX.2 · HD 206893 B</div>
+    <div class="drone-tip" id="drone-tip"></div>
+
+    <!-- camera canvas (static) -->
+    <canvas id="cam-canvas"></canvas>
+    <div class="cam-tag" id="cam-tag"></div>
+    <div class="cam-status-center" id="cam-status-center">
+      <div class="cam-status-name" id="cam-status-name"></div>
+      <div class="cam-status-state" id="cam-status-state"></div>
+    </div>
+
+    <!-- spectrum offline notice + slider preview -->
+    <div class="spec-overlay" id="spec-overlay">
+      <div class="spec-offline-tag">MOD. SPECTRUM &middot; <span class="st-offline">OFFLINE</span></div>
+    </div>
+    <div class="spec-slider-overlay" id="spec-slider-overlay">
+      <div class="spec-name" id="spec-name">INFRARED &middot; 750nm</div>
+      <div class="spec-label-bar"><span>Infrared</span><span>Visible</span><span>UV</span><span>X-Ray</span></div>
+      <div class="spec-slider-wrap">
+        <input type="range" class="spec-range" id="spec-range" min="0" max="100" value="35" oninput="updateSpectrum(this.value)">
+      </div>
+    </div>
+
+    <!-- static burst on switch -->
+    <canvas id="static-burst"></canvas>
+  </div>
+
+  <div class="instruments">
+    <div class="inst">
+      <div class="inst-label">Gravimetric <span class="inst-val" id="grav-val">23.0 Jₘ</span></div>
+      <div class="bar-track"><div class="bar-fill bar-grav" id="grav-bar" style="width:82%"></div></div>
+    </div>
+    <div class="inst">
+      <div class="inst-label">DM density <span class="inst-val" id="therm-val">↑ anomalous</span></div>
+      <div class="bar-track"><div class="bar-fill bar-therm" id="therm-bar" style="width:66%"></div></div>
+    </div>
+    <div class="inst">
+      <div class="inst-label">Precipitate <span class="inst-val inst-flag" id="chem-val">0.3mm/yr</span></div>
+      <div class="bar-track"><div class="bar-fill bar-chem" id="chem-bar" style="width:45%"></div></div>
+    </div>
+    <div class="inst">
+      <div class="inst-label">SAAAD <span class="inst-val" id="sig-val">idle ○</span></div>
+      <div class="waveform"><canvas id="wave" style="width:100%;height:20px"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- MIDDLE: TRANSMISSION + REQUESTS -->
+<section class="mid-panel">
+  <div class="panel-tabs">
+    <button class="tab-btn active" onclick="setTab('tx',this)">Transmission</button>
+    <button class="tab-btn" onclick="setTab('req',this)">Reports</button>
+    <button class="tab-btn" id="drone-tab-btn" onclick="setTab('drone',this)">Drone</button>
+  </div>
+
+  <div class="panel-content active" id="tab-tx">
+    <div class="tx-header">
+      <div class="tx-title">Second transmission — report 002</div>
+      <div class="tx-id">⊛ DM-0791v1/M1-4TVX.2 — ◐⊛○</div>
+    </div>
+    <div class="tx-lines">
+      <div class="tx-line" style="animation-delay:.05s"><div class="tx-sym">⊛⌖ ³⁴¹•⁰↔ •⊗ ¹•²⁴⊗↑ ⊞∿ ³⁰•⁰⊘→¹⁴⁰•⁰⊘</div><div class="tx-gl">(origin: 133 ly — F5V anchor — 1.24 M☉ — debris disk 30–180 AU)</div></div>
+      <div class="tx-line" style="animation-delay:.15s"><div class="tx-sym">•⊕ ³⁵•⁰⊕ ◎─ ⊂∿ ¹⁰•⁰⊘⟳</div><div class="tx-gl">(companion: 23 Jₘ — complex — embedded in disk — orbiting at 10 AU)</div></div>
+      <div class="tx-line" style="animation-delay:.25s"><div class="tx-sym">◐⊛ ⊿⊉ ⊞• ⌖△ ∿⊉○</div><div class="tx-gl">(prior unit: anomaly detected — multiple bodies — field inconsistent, confirmed)</div></div>
+      <div class="tx-line" style="animation-delay:.35s"><div class="tx-sym">│← ◐⊛ ◑⌖ ⊿↑ ⟳⏚</div><div class="tx-gl">(this unit: deployed after first pass — instruments upgraded — orbit stable)</div></div>
+      <div class="tx-div"></div>
+      <div class="tx-line" style="animation-delay:.45s"><div class="tx-sym">⊞• ³•⁴ ─∿ ⏚⟳ ⊕⊂⊕</div><div class="tx-gl">(target bodies: moons 3 and 4 — airless — tidally locked)</div></div>
+      <div class="tx-line" style="animation-delay:.55s"><div class="tx-sym">⊿∿ ⊉⌀ ↑⊕ ⊂⊿⊉○</div><div class="tx-gl">(gravimetric: mass present — not instrument-expected — anomaly confirmed)</div></div>
+      <div class="tx-line" style="animation-delay:.65s"><div class="tx-sym">∿∇ ◎⊞ ⊉⏚ ⊕⋈⊕ ∿⊂∿</div><div class="tx-gl">(spacetime geometry: complex — not static — brown dwarf/disk interaction)</div></div>
+      <div class="tx-div"></div>
+      <div class="tx-line" style="animation-delay:.75s"><div class="tx-sym">⋈─ ∿•⋈• ─○ ─△ △⊞</div><div class="tx-gl">(dark/ordinary matter interacting — not converting — intermediate state)</div></div>
+      <div class="tx-line" style="animation-delay:.85s"><div class="tx-sym">⊿⊉ ⌀↑ ⊂⊿ ─⊛ ○⊕</div><div class="tx-gl">(density inconsistency confirmed — not EM detectable — mass only)</div></div>
+      <div class="tx-div"></div>
+      <div class="tx-line" style="animation-delay:.95s"><div class="tx-sym">⊿‰ ⁰•¹⁴‰⟳ ∇↓ ⊞⌖</div><div class="tx-gl">(accumulation: 0.3mm/yr — gravity-driven — topographic lows)</div></div>
+      <div class="tx-line" style="animation-delay:1.05s"><div class="tx-sym">∅⊛∿ ─⌁ ○⊕⊿</div><div class="tx-gl">(no EM signature any band — mass only — confirmed)</div></div>
+      <div class="tx-line" style="animation-delay:1.15s"><div class="tx-sym">⊂⌀ ↑⁺ ◐∞ ⟳⊕</div><div class="tx-gl">(subsurface deposit: meters deep — extended prior history)</div></div>
+      <div class="tx-div"></div>
+      <div class="tx-line" style="animation-delay:1.25s"><div class="tx-sym">•⋈• ─○ △⊞ ◎⋈◎</div><div class="tx-gl">(devil's advocate particle: known — sustaining transition, not resolving)</div></div>
+      <div class="tx-line" style="animation-delay:1.35s"><div class="tx-sym">⊉◎ ∿∇ ⊞⋈ ─△ ◎⊞</div><div class="tx-gl">(anomalous — complex geometry sustaining — not predicted)</div></div>
+      <div class="tx-line" style="animation-delay:1.45s"><div class="tx-sym">◐⊿ △∞ ↑‰ ─○</div><div class="tx-gl">(prior observations rare — this: most sustained on record)</div></div>
+      <div class="tx-line" style="animation-delay:1.55s"><div class="tx-sym">✦○ ⊛◑ △⊿ ∞─</div><div class="tx-gl">(three items flagged — forwarded — duration limit unresolved)</div></div>
+      <div class="tx-div"></div>
+      <div class="tx-line" style="animation-delay:1.65s"><div class="tx-sym">⟳⏚ ³•⁴ ⊿⊕ ─∇</div><div class="tx-gl">(moon orbits stable — mass distribution not yet affected)</div></div>
+      <div class="tx-line" style="animation-delay:1.75s"><div class="tx-sym">•⊕ ³⁵•⁰⊕ ─⊉∿ ∵∿∇⊞</div><div class="tx-gl">(brown dwarf: 23 Jₘ — no anomalous surface interaction)</div></div>
+      <div class="tx-line" style="animation-delay:1.85s"><div class="tx-sym">∴⌖ ○⊞ ∵∇⊞⊕</div><div class="tx-gl">(conclusion: position is the condition, not proximity alone)</div></div>
+      <div class="tx-div"></div>
+      <div class="tx-line" style="animation-delay:1.95s"><div class="tx-sym">│⟳ ³•⁴ ⏚○ ⊿‰ △⏚ ◑⊛</div><div class="tx-gl">(this unit: orbiting moons 3/4 — monitoring — transmitting)</div></div>
+      <div class="tx-line" style="animation-delay:2.05s"><div class="tx-sym">◐• ─◑ →∞</div><div class="tx-gl">(carrier: prior — moved on — no return)</div></div>
+      <div class="tx-line" style="animation-delay:2.15s"><div class="tx-sym">∿‰ ⏚⟳ ⊉⊠</div><div class="tx-gl">(precipitation continuing — stable — no failure)</div></div>
+    </div>
+  </div>
+
+  <div class="panel-content" id="tab-req">
+    <div class="req-panel">
+      <div>
+        <div class="req-title">Report request</div>
+        <p class="req-sub" style="margin-top:4px">Request a compiled summary from the live archive. The dataset updates continuously as the mini-drone transmits.</p>
+      </div>
+      <div class="req-field">
+        <label>Drone / target</label>
+        <select>
+          <option>DM-0791v1/M1-4TVX.2 — HD 206893 B moons</option>
+          <option>NT-3184v1 — rogue planet</option>
+          <option>All active drones</option>
+        </select>
+      </div>
+      <div class="req-field">
+        <label>Data type</label>
+        <select>
+          <option>Latest summary</option>
+          <option>Transition state stability</option>
+          <option>Full dataset delta</option>
+          <option>Precipitate accumulation rate</option>
+          <option>Devil's advocate particle behavior</option>
+          <option>Long-term gravitational implications</option>
+        </select>
+      </div>
+      <div class="req-field">
+        <label>Subject range (optional)</label>
+        <input type="text" placeholder="e.g. transition state, precipitate depth">
+      </div>
+      <div class="req-field">
+        <label>Format</label>
+        <select>
+          <option>Drone voice (translated)</option>
+          <option>Raw transmission + gloss</option>
+          <option>Data table</option>
+        </select>
+      </div>
+      <button class="req-submit" onclick="submitRequest()">Submit report request</button>
+      <div class="req-confirm" id="req-confirm">✦ Request queued — DM-0791v1<br>Estimated response: next transmission window<br>Subscribe for notification.</div>
+      <div class="req-recent" style="margin-bottom:0;padding-bottom:10px">
+        <div class="req-recent-title">Published reports — DM-0791v1</div>
+        <div class="req-item" style="opacity:0.5">
+          <div>
+            <div class="req-item-text">001 · Preliminary survey (unpublished)</div>
+            <div style="font-family:'Space Mono',monospace;font-size:7px;color:var(--dim);margin-top:2px">Mini-drone .1 · anomalies confirmed real</div>
+          </div>
+          <div class="req-item-time">archived</div>
+        </div>
+        <div class="req-item" style="align-items:center">
+          <div>
+            <div class="req-item-text" style="color:var(--data)">002 · Dark matter precipitation — current</div>
+            <div style="font-family:'Space Mono',monospace;font-size:7px;color:var(--dim);margin-top:2px">Transition state · Precipitate · Devil's advocate particle</div>
+          </div>
+          <div class="req-item-time" style="color:var(--data)">current</div>
+        </div>
+        <div class="req-item" style="opacity:0.35">
+          <div class="req-item-text">003 · pending next transmission</div>
+          <div class="req-item-time">—</div>
+        </div>
+      </div>
+      <div class="req-recent">
+        <div class="req-recent-title">Recent requests</div>
+        <div class="req-item"><div class="req-item-text">Transition stability · upper duration limit</div><div class="req-item-time">40m ago</div></div>
+        <div class="req-item"><div class="req-item-text">Precipitate depth · full core sample</div><div class="req-item-time">3h ago</div></div>
+        <div class="req-item"><div class="req-item-text">Devil's advocate particle · detection method</div><div class="req-item-time">6h ago</div></div>
+        <div class="req-item"><div class="req-item-text">Gravitational implications · geological timescale</div><div class="req-item-time">14h ago</div></div>
+        <div class="req-item"><div class="req-item-text">Comparison to other DM precipitation sites</div><div class="req-item-time">1d ago</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="panel-content" id="tab-drone">
+    <div class="req-panel">
+
+      <div style="border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:4px">
+        <div class="req-title">Carrier — NT-3184v1</div>
+        <p class="req-sub" style="margin-top:4px">Fleet carrier. Owned by Dark Matters research group. No individual owner listed.</p>
+      </div>
+
+      <div class="req-field">
+        <label>Owner</label>
+        <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);padding:7px 9px;border:1px solid var(--border2);background:var(--panel2);line-height:1.6">Dark Matters — research group<br><span style="font-size:7px;color:var(--dim);letter-spacing:0.08em">Designation only. No individual member profile listed.</span></div>
+      </div>
+
+      <div class="req-field">
+        <label>Carrier status</label>
+        <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);padding:7px 9px;border:1px solid var(--border2);background:var(--panel2)">Moved on — destination unspecified<br><span style="font-size:7px;color:var(--dim)">Carrier does not return. Mission continues until failure or reassignment.</span></div>
+      </div>
+
+      <div style="border-top:1px solid var(--border);padding-top:12px">
+        <div class="req-recent-title" style="margin-bottom:10px">Mission log — DM-0791v1</div>
+
+        <div style="border:1px solid var(--border);background:var(--panel2);margin-bottom:8px">
+          <div style="padding:8px 10px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+            <span style="font-family:'Space Mono',monospace;font-size:8px;color:var(--data);letter-spacing:0.08em">MISSION 1 · current</span>
+            <span style="font-family:'Space Mono',monospace;font-size:7px;color:var(--dim)">active</span>
+          </div>
+          <div style="padding:8px 10px;font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);line-height:1.7">
+            <div style="color:var(--body);margin-bottom:6px">Gravitational anomalies — moons of HD 206893 B, 133 ly</div>
+            Mission type: research group / directed investigation<br>
+            Mission brief: investigate gravitational anomalies inconsistent with known mass distribution on moons 3 and 4. Two mini-drones deployed sequentially for progressively deeper analysis.
+          </div>
+          <div style="padding:8px 10px;border-top:1px solid var(--border2)">
+            <div style="font-family:'Space Mono',monospace;font-size:7px;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">Mini-drones deployed</div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:5px 0;border-bottom:1px solid var(--border2);opacity:0.6">
+              <div>
+                <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--body)">M1-4TVX.1</div>
+                <div style="font-family:'Space Mono',monospace;font-size:7px;color:var(--dim);margin-top:2px">Preliminary orbital survey · anomalies confirmed real</div>
+              </div>
+              <div style="font-family:'Space Mono',monospace;font-size:7px;color:var(--dim);white-space:nowrap;margin-top:2px">superseded</div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:5px 0">
+              <div>
+                <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--data)">M1-4TVX.2</div>
+                <div style="font-family:'Space Mono',monospace;font-size:7px;color:var(--dim);margin-top:2px">Moons 3 &amp; 4 · dark matter precipitation · this report</div>
+              </div>
+              <div style="font-family:'Space Mono',monospace;font-size:7px;color:var(--green);white-space:nowrap;margin-top:2px">active ⏚</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+</section>
+
+<!-- RIGHT: TRANSLATED REPORT -->
+<section class="report-col">
+  <div class="report-header">
+    <div class="report-header-title">Translated report — 002 · second transmission this encounter</div>
+    <div class="report-header-id">Dark Matter Precipitation — HD 206893 B</div>
+  </div>
+  <div class="report-body">
+    <div style="font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);letter-spacing:0.1em;border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:14px;line-height:1.6">Second report from DM-0791v1 · preliminary survey (report 001) archived, unpublished · subscribe for subsequent reports</div>
+    <p class="lead">HD 206893 is an F5V star 133 light-years out, about a quarter again larger and more massive than the Sun, with a debris disk running from 30 to 180 astronomical units and a brown dwarf companion — HD 206893 B, roughly 23 Jupiter masses, deeply red, dusty-atmosphered — orbiting inside that disk at around 10 AU.</p>
+    <p class="lead">The Dark Matters group sent the carrier that deployed me because the moons of HD 206893 B were showing gravitational anomalies inconsistent with their known mass distribution. Nobody had looked closely.</p>
+    <p class="lead">A first mini-drone, DM-0791v1/M1-4TVX.1, completed a preliminary orbital survey and confirmed the anomalies were real. I was deployed for the second pass, with better instruments and a longer operational window.</p>
+    <h2>Dark matter flux</h2>
+    <p>The anomalies are density inconsistencies — regions on both moons where the gravimetric readings do not match the surface composition. The mass is there. It is simply not interacting with anything the instruments expect it to interact with. This is, in the most direct terms, a dark matter concentration of unusual density embedded in the surface and subsurface geology of both bodies.</p>
+    <p>What my instruments are reading at the surface of both moons is consistent with dark matter particles in a sustained interaction state with ordinary matter — not converting, not scattering, but occupying an intermediate condition the current models do not have a clean name for. They are stuck.</p>
+    <h2>The precipitate</h2>
+    <p>The surface effect of this sustained transition state is visible to my thermal and gravimetric instruments as a fine particulate deposit, accumulating continuously across both moon surfaces at a rate of approximately 0.3 millimeters per year.</p>
+    <p class="lead">It is snowing dark matter.</p>
+    <p>This is not a metaphor. The transition-state particles are precipitating out of the local dark matter flux and settling on the surface under gravity, exactly as snow precipitates from supersaturated air. The accumulated deposit on both moons extends several meters deep in places by subsurface sounding.</p>
+    <h2>The transition particle</h2>
+    <p>The devil's advocate particle — the sub-Standard-Model mediator that couples to dark matter's non-electromagnetic properties and drives its conversion to ordinary matter — is known. Its existence is not in question. What it does under normal conditions is well characterized: it mediates the interaction that converts dark matter particles to ordinary matter, resolving the transition cleanly in one direction.</p>
+    <p>What is happening here is not the normal condition. In the gravitational geometry of the HD 206893 B system, the devil's advocate particle appears to be sustaining the transition state rather than resolving it. Dark matter precipitation of this kind has been observed elsewhere, but rarely and poorly documented. This is among the most sustained and accessible examples on record.</p>
+    <div class="flag-block"><strong>✦ Forwarded for system analysis</strong>Transition state stability upper limit; long-term gravitational implications of surface accumulation. Results pending.</div>
+    <h2>Orbital dynamics</h2>
+    <p>Both moons remain in stable orbits. HD 206893 B itself shows no anomalous surface interaction with the dark matter flux, which is consistent with the hypothesis that the transition state requires a specific gravitational stress geometry rather than mere proximity to the brown dwarf's mass. The moons are in the right place. The brown dwarf produced the conditions.</p>
+    <h2>Status</h2>
+    <p>I am holding orbit between the third and fourth moons. Unless instructed otherwise, I will continue monitoring indefinitely. The carrier has moved on.</p>
+    <p class="lead">The snow is still falling.</p>
+  </div>
+</section>
+
+</div>
+
+<script>
+// ── TRACKER ──
+const tCv=document.getElementById('tracker');
+const tCtx=tCv.getContext('2d');
+const tip=document.getElementById('drone-tip');
+let W,H,cx,cy,pR,oR,angle=0,stars=[];
+
+function resizeTracker(){
+  const a=document.getElementById('view-area');
+  W=tCv.width=a.offsetWidth;H=tCv.height=a.offsetHeight;
+  cx=W*.5;cy=H*.45;pR=Math.min(W,H)*.2;oR=pR*1.72;
+  stars=Array.from({length:160},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.2+.2,a:Math.random()*.5+.15}));
+}
+
+function isBehind(a){return Math.sin(a)>0&&Math.abs(Math.cos(a)*oR)<pR*.92;}
+
+function drawTracker(){
+  tCtx.clearRect(0,0,W,H);
+  stars.forEach(s=>{tCtx.beginPath();tCtx.arc(s.x,s.y,s.r,0,Math.PI*2);tCtx.fillStyle=`rgba(200,220,240,${s.a})`;tCtx.fill();});
+  const g=tCtx.createRadialGradient(cx,cy,pR*.25,cx,cy,pR);
+  g.addColorStop(0,'#1A3A5C');g.addColorStop(.5,'#0D2438');g.addColorStop(.85,'#060F1E');g.addColorStop(1,'#030810');
+  tCtx.beginPath();tCtx.arc(cx,cy,pR,0,Math.PI*2);tCtx.fillStyle=g;tCtx.fill();
+  const atm=tCtx.createRadialGradient(cx,cy,pR*.88,cx,cy,pR*1.1);
+  atm.addColorStop(0,'rgba(79,195,247,0)');atm.addColorStop(.65,'rgba(79,195,247,0.04)');atm.addColorStop(1,'rgba(79,195,247,0.18)');
+  tCtx.beginPath();tCtx.arc(cx,cy,pR*1.1,0,Math.PI*2);tCtx.fillStyle=atm;tCtx.fill();
+  tCtx.beginPath();tCtx.ellipse(cx,cy,oR,oR*.26,0,0,Math.PI*2);
+  tCtx.strokeStyle='rgba(79,195,247,0.09)';tCtx.lineWidth=1;tCtx.setLineDash([3,8]);tCtx.stroke();tCtx.setLineDash([]);
+  const behind=isBehind(angle);
+  const dx=cx+Math.cos(angle)*oR,dy=cy+Math.sin(angle)*oR*.26;
+  if(!behind){
+    for(let i=28;i>=0;i--){const ta=angle-(i/28)*.45;if(!isBehind(ta)){tCtx.beginPath();tCtx.arc(cx+Math.cos(ta)*oR,cy+Math.sin(ta)*oR*.26,1.2,0,Math.PI*2);tCtx.fillStyle=`rgba(79,195,247,${(1-i/28)*.28})`;tCtx.fill();}}
+    tCtx.beginPath();tCtx.arc(dx,dy,3.5,0,Math.PI*2);tCtx.fillStyle='#4FC3F7';tCtx.fill();
+    tCtx.beginPath();tCtx.arc(dx,dy,7,0,Math.PI*2);tCtx.strokeStyle='rgba(79,195,247,0.22)';tCtx.lineWidth=1;tCtx.stroke();
+  } else {
+    tCtx.beginPath();tCtx.arc(dx,dy,2,0,Math.PI*2);tCtx.fillStyle='rgba(79,195,247,0.1)';tCtx.fill();
+  }
+  tCv._dx=dx;tCv._dy=dy;tCv._behind=behind;
+  angle+=.004;requestAnimationFrame(drawTracker);
+}
+
+tCv.addEventListener('mousemove',e=>{
+  const r=tCv.getBoundingClientRect();
+  const dist=Math.sqrt((e.clientX-r.left-(tCv._dx||0))**2+(e.clientY-r.top-(tCv._dy||0))**2);
+  if(dist<22){
+    tip.style.display='block';tip.style.left=(tCv._dx+14)+'px';tip.style.top=Math.max(8,tCv._dy-30)+'px';
+    tip.innerHTML=tCv._behind?'NT-3184v1/M2-9KXR.1<br>Status: occluded<br>Behind planet body<br>Signal: intermittent':'NT-3184v1/M2-9KXR.1<br>Orbit: stable ⏚<br>Signal: SAAAD ●<br>Instruments: active';
+  } else tip.style.display='none';
+});
+
+const roT=new ResizeObserver(()=>resizeTracker());
+roT.observe(document.getElementById('view-area'));
+resizeTracker();drawTracker();
+
+// ── CAMERA STATIC ──
+const cCv=document.getElementById('cam-canvas');
+const cCtx=cCv.getContext('2d');
+let camInterval=null;
+
+function drawCamStatic(){
+  const a=document.getElementById('view-area');
+  cCv.width=a.offsetWidth;cCv.height=a.offsetHeight;
+  const w=cCv.width,h=cCv.height,id=cCtx.createImageData(w,h),d=id.data;
+  for(let i=0;i<d.length;i+=4){
+    const v=Math.random()>.6?Math.floor(Math.random()*28+4):Math.floor(Math.random()*6);
+    d[i]=d[i+1]=d[i+2]=v;d[i+3]=185;
+  }
+  cCtx.putImageData(id,0,0);
+}
+
+function startCamStatic(){if(camInterval)clearInterval(camInterval);camInterval=setInterval(drawCamStatic,80);drawCamStatic();}
+function stopCamStatic(){if(camInterval){clearInterval(camInterval);camInterval=null;}}
+
+// ── STATIC BURST ON SWITCH ──
+const sBurst=document.getElementById('static-burst');
+const sBCtx=sBurst.getContext('2d');
+let burstInt=null;
+
+function showBurst(duration){
+  const a=document.getElementById('view-area');
+  sBurst.width=a.offsetWidth;sBurst.height=a.offsetHeight;
+  sBurst.style.opacity='1';
+  let t=0;
+  if(burstInt)clearInterval(burstInt);
+  burstInt=setInterval(()=>{
+    const w=sBurst.width,h=sBurst.height,id=sBCtx.createImageData(w,h),d=id.data;
+    for(let i=0;i<d.length;i+=4){const v=Math.random()>.4?Math.floor(Math.random()*90+10):0;d[i]=d[i+1]=d[i+2]=v;d[i+3]=v>0?210:0;}
+    sBCtx.putImageData(id,0,0);t+=50;
+    if(t>=duration){clearInterval(burstInt);sBurst.style.opacity='0';sBCtx.clearRect(0,0,w,h);}
+  },50);
+}
+
+// ── SPECTRUM SLIDER ──
+const specNames=[
+  'INFRARED · 1500nm','INFRARED · 1000nm','INFRARED · 750nm',
+  'VISIBLE · RED · 700nm','VISIBLE · ORANGE · 620nm','VISIBLE · YELLOW · 580nm',
+  'VISIBLE · GREEN · 530nm','VISIBLE · BLUE · 470nm','VISIBLE · VIOLET · 420nm',
+  'ULTRAVIOLET · 380nm','ULTRAVIOLET · 300nm','ULTRAVIOLET · 200nm',
+  'FAR UV · 120nm','EUV · 50nm','SOFT X-RAY · 10nm','X-RAY · 1nm'
+];
+
+// planet color palettes per spectrum position (0-100)
+function specPlanetColor(v){
+  if(v<20) return['#3D1800','#200E00','#0D0500','#040200']; // deep IR — hot red/brown
+  if(v<35) return['#2A1400','#18090','#0A0400','#030100']; // near IR — dark amber
+  if(v<50) return['#1A3A5C','#0D2438','#060F1E','#030810']; // visible — default blue
+  if(v<65) return['#1A2A1A','#0D180D','#060A06','#020302']; // green channel
+  if(v<80) return['#1A0A3D','#0D0525','#060010','#020006']; // UV — deep purple
+  return['#0A0A0A','#050505','#020202','#010101']; // X-ray — near black with faint structure
+}
+
+function updateSpectrum(v){
+  const idx=Math.floor(v/100*(specNames.length-1));
+  document.getElementById('spec-name').textContent=specNames[idx];
+  // shift planet color live using spectrum overlay tint
+  const pct=v/100;
+  const hue=Math.round(280-pct*280); // red→violet→xray
+  const sat=pct<0.3?60:pct<0.7?80:20;
+  document.getElementById('view-area').style.setProperty('--spec-tint',`hsla(${hue},${sat}%,40%,0.08)`);
+}
+
+// ── VIEW SWITCHER ──
+const camData={
+  vis:{name:'CAM-A · VISIBLE SPECTRUM',state:'offline'},
+  ir:{name:'CAM-B · INFRARED',state:'connecting'},
+  uv:{name:'CAM-C · ULTRAVIOLET',state:'offline'},
+  radio:{name:'CAM-D · RADIO',state:'connecting'},
+  therm:{name:'CAM-E · THERMAL',state:'offline'}
+};
+
+let currentView='tracker';
+
+function setView(view,btn){
+  document.querySelectorAll('.vt-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  showBurst(700);
+  tip.style.display='none';
+
+  // hide everything
+  tCv.style.display='none';
+  document.getElementById('tracker-tag').style.display='none';
+  cCv.style.display='none';
+  document.getElementById('cam-tag').style.display='none';
+  document.getElementById('cam-status-center').style.display='none';
+  document.getElementById('spec-overlay').style.display='none';
+  document.getElementById('spec-slider-overlay').style.display='none';
+  stopCamStatic();
+
+  if(view==='tracker'){
+    tCv.style.display='block';
+    document.getElementById('tracker-tag').style.display='block';
+  } else if(view==='spec'){
+    tCv.style.display='block';
+    document.getElementById('tracker-tag').style.display='block';
+    document.getElementById('spec-overlay').style.display='block';
+    document.getElementById('spec-slider-overlay').style.display='flex';
+  } else {
+    const d=camData[view];
+    cCv.style.display='block';
+    document.getElementById('cam-tag').style.display='block';
+    document.getElementById('cam-tag').textContent=d.name;
+    const sc=document.getElementById('cam-status-center');
+    sc.style.display='flex';
+    document.getElementById('cam-status-name').textContent=d.name;
+    const ss=document.getElementById('cam-status-state');
+    ss.textContent=d.state.toUpperCase();
+    ss.className='cam-status-state '+(d.state==='connecting'?'st-connecting':'st-offline');
+    startCamStatic();
+  }
+  currentView=view;
+}
+
+// init — show tracker
+tCv.style.display='block';
+
+// ── INSTRUMENTS ──
+const wCv=document.getElementById('wave');
+const wCtx=wCv.getContext('2d');
+let wT=0;
+function drawWave(){
+  wCv.width=wCv.offsetWidth*2;wCv.height=40;
+  const w=wCv.width,h=wCv.height;
+  wCtx.clearRect(0,0,w,h);wCtx.beginPath();
+  for(let x=0;x<w;x++){
+    const y=h/2+Math.sin((x/w)*Math.PI*8+wT)*h*.2+Math.sin((x/w)*Math.PI*13+wT*1.3)*h*.08+Math.sin((x/w)*Math.PI*3+wT*.7)*h*.1;
+    x===0?wCtx.moveTo(x,y):wCtx.lineTo(x,y);
+  }
+  wCtx.strokeStyle='rgba(127,219,255,0.65)';wCtx.lineWidth=1.5;wCtx.stroke();
+  wT+=.06;
+}
+setInterval(drawWave,50);
+
+let gravBase=74,thermBase=58,chemBase=30;
+function updateInstruments(){
+  gravBase+=(Math.random()-.5)*3;gravBase=Math.max(68,Math.min(82,gravBase));
+  thermBase+=(Math.random()-.5)*4;thermBase=Math.max(48,Math.min(72,thermBase));
+  chemBase+=(Math.random()-.5)*5;chemBase=Math.max(20,Math.min(45,chemBase));
+  document.getElementById('grav-bar').style.width=gravBase.toFixed(1)+'%';
+  document.getElementById('therm-bar').style.width=thermBase.toFixed(1)+'%';
+  document.getElementById('chem-bar').style.width=chemBase.toFixed(1)+'%';
+  document.getElementById('grav-val').textContent=(22.9+Math.random()*.2).toFixed(1)+' Jₘ';
+  document.getElementById('therm-val').textContent=['↑ anomalous','stuck state','oscillating'][Math.floor(Math.random()*3)];
+  document.getElementById('chem-val').textContent=(0.28+Math.random()*0.05).toFixed(2)+'mm/yr';
+  document.getElementById('sig-val').textContent=['idle ○','idle ○','idle ○','preparing ◑'][Math.floor(Math.random()*4)];
+}
+setInterval(updateInstruments,900);
+
+let reads=14892,viewers=47;
+setInterval(()=>{if(Math.random()<.15){reads++;document.getElementById('reads').textContent=reads.toLocaleString();}},3000);
+setInterval(()=>{viewers+=Math.floor((Math.random()-.4)*3);viewers=Math.max(30,Math.min(80,viewers));document.getElementById('viewers').textContent=viewers;},5000);
+
+function openDroneTab(){
+  const btn=document.getElementById('drone-tab-btn');
+  setTab('drone',btn);
+}
+
+function setTab(tab,btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.panel-content').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+}
+
+function submitRequest(){
+  const c=document.getElementById('req-confirm');
+  c.style.display='block';setTimeout(()=>{c.style.display='none';},4000);
+}
+</script>
+</body>
+</html>

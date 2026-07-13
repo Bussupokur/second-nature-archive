@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nasaat — Network for Autonomous Space Archive & Astronomical Transmissions</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--space:#050810;--panel:#0B1628;--panel2:#0D1E35;
+--border:#1A3A5C;--border2:#0F2540;
+--data:#4FC3F7;--body:#C8DCF0;--symbol:#7FDBFF;
+--flag:#FF6B35;--dim:#3A5570;--white:#E8F4FD;--green:#4ADE80;
+}
+html{background:var(--space);color:var(--body);font-family:'IBM Plex Sans',sans-serif;scroll-behavior:smooth}
+body{min-height:100vh}
+a{color:inherit}
+button{cursor:pointer;font-family:'Space Mono',monospace;border:none;background:none}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid var(--border);background:rgba(11,22,40,0.92);backdrop-filter:blur(10px);flex-wrap:wrap;gap:10px}
+.nav-logo{font-family:'Space Mono',monospace;font-size:13px;letter-spacing:0.15em;color:var(--symbol)}
+.nav-logo span{color:var(--dim);font-size:9px;letter-spacing:0.08em;display:block;margin-top:2px}
+.nav-links{display:flex;gap:22px;align-items:center;flex-wrap:wrap}
+.nav-links a{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);text-decoration:none;letter-spacing:0.08em;text-transform:uppercase;transition:color .2s}
+.nav-links a:hover{color:var(--data)}
+.nav-cta{display:flex;gap:10px}
+.btn{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.08em;text-transform:uppercase;padding:7px 14px;border:1px solid var(--border);transition:all .2s;text-decoration:none;display:inline-block}
+.btn-ghost{color:var(--dim)}
+.btn-ghost:hover{color:var(--data);border-color:var(--data)}
+.btn-solid{color:var(--data);border-color:var(--data);background:rgba(79,195,247,0.08)}
+.btn-solid:hover{background:rgba(79,195,247,0.16)}
+
+/* HERO */
+.hero{position:relative;overflow:hidden;padding:70px 28px 50px;border-bottom:1px solid var(--border)}
+canvas#hero-canvas{position:absolute;inset:0;width:100%;height:100%;opacity:0.55}
+.hero-inner{position:relative;z-index:2;max-width:900px;margin:0 auto;text-align:center}
+.hero-tag{font-family:'Space Mono',monospace;font-size:10px;color:var(--symbol);letter-spacing:0.2em;text-transform:uppercase;margin-bottom:18px}
+.hero h1{font-size:clamp(28px,5vw,44px);font-weight:300;color:var(--white);line-height:1.25;margin-bottom:18px;letter-spacing:-0.01em}
+.hero h1 strong{font-weight:500;color:var(--data)}
+.hero p{font-size:15px;color:var(--body);line-height:1.7;max-width:620px;margin:0 auto 30px;font-weight:300}
+.hero-ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn-lg{font-size:10px;padding:11px 22px}
+
+/* LIVE STATS BAR */
+.stats-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));border-bottom:1px solid var(--border);background:var(--panel)}
+.stat-cell{padding:18px 20px;border-right:1px solid var(--border);text-align:center}
+.stat-cell:last-child{border-right:none}
+.stat-val{font-family:'Space Mono',monospace;font-size:20px;color:var(--data);font-weight:700}
+.stat-label{font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase;margin-top:5px}
+
+/* SECTION GENERIC */
+section.block{max-width:1180px;margin:0 auto;padding:60px 28px}
+.block-head{margin-bottom:32px;text-align:center}
+.block-tag{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:0.16em;text-transform:uppercase;margin-bottom:10px}
+.block-title{font-size:24px;font-weight:300;color:var(--white)}
+.block-title strong{color:var(--data);font-weight:500}
+
+/* ACTIVE DRONES */
+.drone-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.drone-card{border:1px solid var(--border);background:var(--panel2);transition:all .2s;text-decoration:none;display:block;overflow:hidden}
+.drone-card:hover{border-color:var(--data);transform:translateY(-2px)}
+.drone-card-viz{height:130px;position:relative;background:var(--space);overflow:hidden}
+.drone-card-body{padding:16px}
+.drone-card-id{font-family:'Space Mono',monospace;font-size:12px;color:var(--data);margin-bottom:4px}
+.drone-card-loc{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);margin-bottom:10px}
+.drone-card-desc{font-size:12px;color:var(--body);line-height:1.6;margin-bottom:12px;font-weight:300}
+.drone-card-meta{display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid var(--border2)}
+.drone-card-status{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.08em;text-transform:uppercase;display:flex;align-items:center;gap:5px}
+.status-dot{width:5px;height:5px;border-radius:50%;background:var(--green)}
+.drone-card-reads{font-family:'Space Mono',monospace;font-size:8px;color:var(--dim)}
+
+/* HOW IT WORKS */
+.how-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+@media(max-width:800px){.how-grid{grid-template-columns:1fr}}
+.how-card{border:1px solid var(--border);background:var(--panel2);padding:22px}
+.how-card-title{font-family:'Space Mono',monospace;font-size:10px;color:var(--symbol);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.how-icon{width:20px;height:20px;border:1px solid var(--data);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--data)}
+.how-card p{font-size:12.5px;line-height:1.85;color:var(--body);font-weight:300;margin-bottom:10px}
+.how-card p:last-child{margin-bottom:0}
+.how-card .term{color:var(--data);font-family:'Space Mono',monospace;font-size:11px}
+
+/* DESIGNATION EXPLAINER */
+.designation-box{border:1px solid var(--border);background:var(--panel2);padding:20px;margin-top:20px;text-align:center}
+.designation-format{font-family:'Space Mono',monospace;font-size:15px;color:var(--data);letter-spacing:0.05em;margin-bottom:14px}
+.designation-parts{display:flex;justify-content:center;gap:20px;flex-wrap:wrap;font-family:'Space Mono',monospace;font-size:9px;color:var(--dim)}
+.designation-parts span strong{color:var(--body);display:block;font-size:10px;margin-bottom:2px}
+
+/* SIGNAL FEED */
+.feed-list{border:1px solid var(--border);background:var(--panel2)}
+.feed-item{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border2);font-family:'Space Mono',monospace;font-size:9px}
+.feed-item:last-child{border-bottom:none}
+.feed-item-drone{color:var(--data)}
+.feed-item-action{color:var(--body);flex:1;margin-left:14px}
+.feed-item-time{color:var(--dim);white-space:nowrap}
+
+/* REGISTRY TABLE */
+.registry-table{width:100%;border-collapse:collapse;font-family:'Space Mono',monospace;font-size:10px}
+.registry-table th{text-align:left;padding:10px 14px;border-bottom:1px solid var(--border);color:var(--dim);font-size:8px;letter-spacing:0.08em;text-transform:uppercase;font-weight:400}
+.registry-table td{padding:10px 14px;border-bottom:1px solid var(--border2);color:var(--body)}
+.registry-table tr:last-child td{border-bottom:none}
+.registry-table a{color:var(--data);text-decoration:none}
+.registry-table a:hover{text-decoration:underline}
+.reg-status{display:inline-flex;align-items:center;gap:5px;font-size:8px;letter-spacing:0.06em;text-transform:uppercase}
+
+/* APPLY / REGISTER */
+.apply-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+@media(max-width:800px){.apply-grid{grid-template-columns:1fr}}
+.apply-card{border:1px solid var(--border);background:var(--panel2);padding:24px}
+.apply-card h3{font-family:'Space Mono',monospace;font-size:12px;color:var(--white);margin-bottom:10px;font-weight:400}
+.apply-card p{font-size:12px;color:var(--body);line-height:1.7;font-weight:300;margin-bottom:16px}
+.apply-steps{list-style:none;margin-bottom:16px}
+.apply-steps li{font-size:11px;color:var(--body);padding:6px 0 6px 20px;position:relative;border-bottom:1px solid var(--border2);font-weight:300}
+.apply-steps li:last-child{border-bottom:none}
+.apply-steps li:before{content:counter(step);counter-increment:step;position:absolute;left:0;top:6px;font-family:'Space Mono',monospace;font-size:9px;color:var(--data)}
+.apply-steps{counter-reset:step}
+
+.login-form{display:flex;flex-direction:column;gap:10px}
+.login-form input{background:var(--panel);border:1px solid var(--border);color:var(--body);font-family:'Space Mono',monospace;font-size:10px;padding:9px 11px;outline:none}
+.login-form input:focus{border-color:var(--data)}
+.login-form input::placeholder{color:var(--dim)}
+
+/* FOOTER */
+footer{border-top:1px solid var(--border);padding:30px 28px;text-align:center;background:var(--panel)}
+footer p{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);line-height:1.8}
+footer .footer-links{margin-top:10px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+footer .footer-links a{font-size:9px;color:var(--dim);text-decoration:none}
+footer .footer-links a:hover{color:var(--data)}
+
+@media(max-width:600px){
+  .hero{padding:50px 18px 36px}
+  section.block{padding:40px 18px}
+  nav{padding:12px 16px}
+  .nav-links{display:none}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">NASAAT<span>Network for Autonomous Space Archive &amp; Astronomical Transmissions</span></div>
+  <div class="nav-links">
+    <span onclick="scrollToId('active-drones')" style="cursor:pointer">Active Drones</span>
+    <span onclick="scrollToId('how-it-works')" style="cursor:pointer">How It Works</span>
+    <span onclick="scrollToId('registry')" style="cursor:pointer">Registry</span>
+    <span onclick="scrollToId('apply')" style="cursor:pointer">Apply</span>
+    <span onclick="scrollToId('feed')" style="cursor:pointer">Signal Feed</span>
+  </div>
+  <div class="nav-cta">
+    <span onclick="scrollToId('login')" class="btn btn-ghost" style="cursor:pointer">Log In</span>
+    <span onclick="scrollToId('apply')" class="btn btn-solid" style="cursor:pointer">Deploy a Drone</span>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-inner">
+    <div class="hero-tag">2 active carriers &middot; 3 mini-drones in the field</div>
+    <h1>Whatever's out there,<br>someone's <strong>drone</strong> is already looking at it.</h1>
+    <p>Every drone, every carrier, every transmission &mdash; in one place. Browse what's out there, or send something of your own to look.</p>
+    <div class="hero-ctas">
+      <span onclick="scrollToId('active-drones')" class="btn btn-solid btn-lg" style="cursor:pointer">View active drones</span>
+      <span onclick="scrollToId('how-it-works')" class="btn btn-ghost btn-lg" style="cursor:pointer">How it works</span>
+    </div>
+  </div>
+</div>
+
+<!-- LIVE STATS -->
+<div class="stats-bar">
+  <div class="stat-cell"><div class="stat-val" id="stat-drones">2</div><div class="stat-label">Active drones</div></div>
+  <div class="stat-cell"><div class="stat-val" id="stat-mini">3</div><div class="stat-label">Mini-drones deployed</div></div>
+  <div class="stat-cell"><div class="stat-val" id="stat-reports">2</div><div class="stat-label">Reports published</div></div>
+  <div class="stat-cell"><div class="stat-val" id="stat-ly">133+</div><div class="stat-label">Furthest transmission (ly)</div></div>
+  <div class="stat-cell"><div class="stat-val" id="stat-watchers">312</div><div class="stat-label">Watching right now</div></div>
+  <div class="stat-cell"><div class="stat-val" id="stat-reads">46.7K</div><div class="stat-label">Total reads</div></div>
+</div>
+
+<!-- ACTIVE DRONES -->
+<section class="block" id="active-drones">
+  <div class="block-head">
+    <div class="block-tag">Live network</div>
+    <div class="block-title">Currently <strong>active</strong> drones</div>
+  </div>
+  <div class="drone-grid">
+
+    <a href="nasaat_report_001_final.html" class="drone-card">
+      <div class="drone-card-viz"><canvas id="mini-viz-1" style="width:100%;height:100%"></canvas></div>
+      <div class="drone-card-body">
+        <div class="drone-card-id">NT-3184v1/M2-9KXR.1</div>
+        <div class="drone-card-loc">Rogue planet &middot; en route region toward Proxima Centauri</div>
+        <div class="drone-card-desc">Unbound gas giant, 7.4 Jupiter masses, retaining liquid water via internal heat. Biosignature chemistry and formation history under system analysis.</div>
+        <div class="drone-card-meta">
+          <div class="drone-card-status"><div class="status-dot"></div>Stable orbit</div>
+          <div class="drone-card-reads">14,892 reads</div>
+        </div>
+      </div>
+    </a>
+
+    <a href="nasaat_report_002_final.html" class="drone-card">
+      <div class="drone-card-viz"><canvas id="mini-viz-2" style="width:100%;height:100%"></canvas></div>
+      <div class="drone-card-body">
+        <div class="drone-card-id">DM-0791v1/M1-4TVX.2</div>
+        <div class="drone-card-loc">Moons 3 &amp; 4, HD 206893 B &middot; 133 light-years</div>
+        <div class="drone-card-desc">Sustained dark matter transition state producing surface precipitation. Devil's advocate particle behaving anomalously in complex gravitational geometry.</div>
+        <div class="drone-card-meta">
+          <div class="drone-card-status"><div class="status-dot"></div>Stable orbit</div>
+          <div class="drone-card-reads">31,847 reads</div>
+        </div>
+      </div>
+    </a>
+
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="block" id="how-it-works">
+  <div class="block-head">
+    <div class="block-tag">The mechanics</div>
+    <div class="block-title">How the network <strong>moves and speaks</strong></div>
+  </div>
+  <div class="how-grid">
+    <div class="how-card">
+      <div class="how-card-title"><div class="how-icon">&#8635;</div>Propulsion &mdash; subspace undercurrents</div>
+      <p>Laser launch carries a drone through the inner solar system, where the ambient spacetime gradient is too disturbed near large masses to navigate cleanly. Beyond a system's gravitational influence, the drone enters the <span class="term">subspace undercurrent</span> &mdash; the permanent geometric deformation left in spacetime's fabric by countless gravitational events across cosmological time.</p>
+      <p>These accumulated deformations form folds and channels in the topology of space itself: <span class="term">subspace gradients</span>. The drone does not move through space &mdash; it moves along the fold, drawing power from the same geometric tension it resolves as it travels. The result is effective faster-than-light transit without ever exceeding the speed of light within space.</p>
+    </div>
+    <div class="how-card">
+      <div class="how-card-title"><div class="how-icon">&#8734;</div>Communication &mdash; Quantum SAAAD</div>
+      <p><span class="term">Quantum SAAAD</span> &mdash; Spooky Action At A Distance &mdash; is how every drone reports home. Each carries one half of a prepared entangled array; the receiving station holds the other. No signal travels. No transmission propagates through space.</p>
+      <p>Information is encoded in the pattern of entangled state preparations rather than in the states themselves &mdash; not read, but shaped, at the point of preparation. Communication is therefore not sent but already present, waiting to be read. There is no delay. Two-way contact is possible but requires deliberate effort on the receiving end &mdash; most senders simply listen.</p>
+    </div>
+    <div class="how-card">
+      <div class="how-card-title"><div class="how-icon">&#9673;</div>Mini-drones &amp; mission structure</div>
+      <p>Carriers decelerate on approach to a target, release one or more mini-drones into stable orbit or surface operation, then re-accelerate and continue &mdash; they never stop completely and never return.</p>
+      <p>Mini-drones do not run out of power; they draw from the same subspace gradient they surf. They end only through failure &mdash; instrument degradation, collision, loss of gradient contact &mdash; or reassignment. Most simply watch, for as long as there is something worth watching.</p>
+    </div>
+    <div class="how-card">
+      <div class="how-card-title"><div class="how-icon">&#10022;</div>The quantum symbolic language</div>
+      <p>Every transmission arrives in a base-6 symbolic language native to the SAAAD array &mdash; eight conceptual symbols, base-6 numerals, and a set of unit and operator markers. What you read in a report is always a translation.</p>
+      <p>The raw transmission appears alongside a crude machine gloss &mdash; a partial, mechanical first-pass rendering &mdash; before the full human translation. Nothing about the process is lossless. Something is always left in the original.</p>
+    </div>
+  </div>
+
+  <div class="designation-box">
+    <div class="designation-format">[DRONE-ID]v[VERSION]/M[MISSION-NO]-[REPORT-CODE]</div>
+    <div class="designation-parts">
+      <span><strong>DRONE-ID</strong>fixed for life</span>
+      <span><strong>VERSION</strong>hardware upgrade</span>
+      <span><strong>MISSION-NO</strong>reassignment</span>
+      <span><strong>REPORT-CODE</strong>unique per report</span>
+    </div>
+  </div>
+</section>
+
+<!-- REGISTRY -->
+<section class="block" id="registry">
+  <div class="block-head">
+    <div class="block-tag">Full record</div>
+    <div class="block-title">Drone &amp; report <strong>registry</strong></div>
+  </div>
+  <div style="overflow-x:auto">
+  <table class="registry-table">
+    <thead>
+      <tr><th>Drone</th><th>Owner</th><th>Target</th><th>Reports</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>NT-3184v1</td>
+        <td>[profile pending]</td>
+        <td>Rogue planet, Proxima heading</td>
+        <td><a href="nasaat_report_001_final.html">001</a></td>
+        <td><span class="reg-status"><div class="status-dot"></div>Active</span></td>
+      </tr>
+      <tr>
+        <td>DM-0791v1</td>
+        <td>Dark Matters group</td>
+        <td>HD 206893 B, moons 3 &amp; 4</td>
+        <td><a href="nasaat_report_002_final.html">002</a> <span style="opacity:.4">&middot; 001 (unpublished)</span></td>
+        <td><span class="reg-status"><div class="status-dot"></div>Active</span></td>
+      </tr>
+      <tr style="opacity:0.4">
+        <td>&mdash;</td>
+        <td>&mdash;</td>
+        <td>Awaiting next deployment</td>
+        <td>&mdash;</td>
+        <td><span class="reg-status">Pending</span></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- SIGNAL FEED -->
+<section class="block" id="feed">
+  <div class="block-head">
+    <div class="block-tag">Network activity</div>
+    <div class="block-title">Live <strong>signal feed</strong></div>
+  </div>
+  <div class="feed-list" id="feed-list">
+    <div class="feed-item"><span class="feed-item-drone">DM-0791v1</span><span class="feed-item-action">instrument reading logged &middot; precipitate depth</span><span class="feed-item-time">just now</span></div>
+    <div class="feed-item"><span class="feed-item-drone">NT-3184v1</span><span class="feed-item-action">orbit stable, no gradient drift detected</span><span class="feed-item-time">2m ago</span></div>
+    <div class="feed-item"><span class="feed-item-drone">DM-0791v1</span><span class="feed-item-action">report request received &middot; transition stability</span><span class="feed-item-time">40m ago</span></div>
+    <div class="feed-item"><span class="feed-item-drone">NT-3184v1</span><span class="feed-item-action">SAAAD array idle &middot; no transmission scheduled</span><span class="feed-item-time">1h ago</span></div>
+    <div class="feed-item"><span class="feed-item-drone">DM-0791v1</span><span class="feed-item-action">report request received &middot; precipitate depth core sample</span><span class="feed-item-time">3h ago</span></div>
+  </div>
+</section>
+
+<!-- APPLY / REGISTER -->
+<section class="block" id="apply">
+  <div class="block-head">
+    <div class="block-tag">Join the network</div>
+    <div class="block-title">Deploy a drone, or <strong>just watch</strong></div>
+  </div>
+  <div class="apply-grid">
+    <div class="apply-card">
+      <h3>Apply for a drone and mission</h3>
+      <p>Nasaat carriers are available to individuals and groups for personal or collaborative deep-space observation. No institutional affiliation required.</p>
+      <ol class="apply-steps">
+        <li>Submit a mission brief &mdash; target, rationale, expected duration</li>
+        <li>Carrier allocation &amp; launch window assigned</li>
+        <li>Track your carrier's transit via your dashboard</li>
+        <li>Mini-drone deployment and first transmission on arrival</li>
+      </ol>
+      <button class="btn btn-solid" style="width:100%;text-align:center;padding:11px">Start an application</button>
+    </div>
+    <div class="apply-card" id="login">
+      <h3>Log in to your Nasaat account</h3>
+      <p>Track your drones, manage subscriptions, and submit report requests across the network.</p>
+      <div class="login-form">
+        <input type="text" placeholder="Handle or designation">
+        <input type="password" placeholder="Passphrase">
+        <button class="btn btn-solid" style="text-align:center;padding:11px;margin-top:4px">Log in</button>
+        <button class="btn btn-ghost" style="text-align:center;padding:11px">Create an account</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>NASAAT &middot; Network for Autonomous Space Archive &amp; Astronomical Transmissions<br>An open, decades-spanning archive. No institutions. Individuals and groups only.</p>
+  <div class="footer-links">
+    <span onclick="scrollToId('how-it-works')" style="cursor:pointer">How it works</span>
+    <span onclick="scrollToId('registry')" style="cursor:pointer">Registry</span>
+    <span onclick="scrollToId('apply')" style="cursor:pointer">Apply</span>
+    <span style="cursor:default">Terms</span>
+    <span style="cursor:default">Data policy</span>
+  </div>
+</footer>
+
+<script>
+function scrollToId(id){
+  const el=document.getElementById(id);
+  if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// HERO STARFIELD
+const heroCv=document.getElementById('hero-canvas');
+const heroCtx=heroCv.getContext('2d');
+function resizeHero(){heroCv.width=heroCv.offsetWidth;heroCv.height=heroCv.offsetHeight;}
+let heroStars=[];
+function initHeroStars(){
+  heroStars=Array.from({length:120},()=>({
+    x:Math.random()*heroCv.width,y:Math.random()*heroCv.height,
+    r:Math.random()*1.3+.2,a:Math.random()*.6+.1,tw:Math.random()*.02+.005
+  }));
+}
+function drawHero(){
+  heroCtx.clearRect(0,0,heroCv.width,heroCv.height);
+  heroStars.forEach(s=>{
+    s.a+=s.tw*(Math.random()>0.5?1:-1);
+    s.a=Math.max(0.1,Math.min(0.7,s.a));
+    heroCtx.beginPath();heroCtx.arc(s.x,s.y,s.r,0,Math.PI*2);
+    heroCtx.fillStyle=`rgba(127,219,255,${s.a})`;heroCtx.fill();
+  });
+  requestAnimationFrame(drawHero);
+}
+window.addEventListener('resize',()=>{resizeHero();initHeroStars();});
+resizeHero();initHeroStars();drawHero();
+
+// MINI DRONE CARD VISUALIZATIONS
+function makeMiniViz(canvasId, planetColors){
+  const cv=document.getElementById(canvasId);
+  const ctx=cv.getContext('2d');
+  let angle=Math.random()*Math.PI*2;
+  function resize(){cv.width=cv.offsetWidth;cv.height=cv.offsetHeight;}
+  function draw(){
+    const W=cv.width,H=cv.height,cx=W*.5,cy=H*.5;
+    const pR=Math.min(W,H)*.24,oR=pR*1.8;
+    ctx.clearRect(0,0,W,H);
+    const g=ctx.createRadialGradient(cx,cy,pR*.25,cx,cy,pR);
+    g.addColorStop(0,planetColors[0]);g.addColorStop(.5,planetColors[1]);g.addColorStop(.85,planetColors[2]);g.addColorStop(1,planetColors[3]);
+    ctx.beginPath();ctx.arc(cx,cy,pR,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
+    ctx.beginPath();ctx.ellipse(cx,cy,oR,oR*.28,0,0,Math.PI*2);
+    ctx.strokeStyle='rgba(79,195,247,0.15)';ctx.lineWidth=1;ctx.setLineDash([2,6]);ctx.stroke();ctx.setLineDash([]);
+    const dx=cx+Math.cos(angle)*oR,dy=cy+Math.sin(angle)*oR*.28;
+    ctx.beginPath();ctx.arc(dx,dy,2.5,0,Math.PI*2);ctx.fillStyle='#4FC3F7';ctx.fill();
+    angle+=.006;
+    requestAnimationFrame(draw);
+  }
+  window.addEventListener('resize',resize);
+  resize();draw();
+}
+makeMiniViz('mini-viz-1',['#1A3A5C','#0D2438','#060F1E','#030810']);
+makeMiniViz('mini-viz-2',['#3D1A0A','#2A1005','#150800','#080400']);
+
+// LIVE STATS TICKING
+let watchers=312, reads=46700;
+setInterval(()=>{
+  watchers+=Math.floor((Math.random()-.4)*4);
+  watchers=Math.max(250,Math.min(400,watchers));
+  document.getElementById('stat-watchers').textContent=watchers;
+},4000);
+setInterval(()=>{
+  if(Math.random()<.3){
+    reads+=Math.floor(Math.random()*8+1);
+    document.getElementById('stat-reads').textContent=(reads/1000).toFixed(1)+'K';
+  }
+},3500);
+
+// SIGNAL FEED LIVE ADDITIONS
+const feedMessages=[
+  {d:'NT-3184v1',a:'orbit stable, no gradient drift detected'},
+  {d:'DM-0791v1',a:'instrument reading logged &middot; transition state'},
+  {d:'NT-3184v1',a:'SAAAD array idle &middot; no transmission scheduled'},
+  {d:'DM-0791v1',a:'precipitate accumulation logged'},
+  {d:'NT-3184v1',a:'biosignature scan cycle complete'},
+  {d:'DM-0791v1',a:'gravimetric anomaly reconfirmed'}
+];
+function addFeedItem(){
+  const list=document.getElementById('feed-list');
+  const msg=feedMessages[Math.floor(Math.random()*feedMessages.length)];
+  const item=document.createElement('div');
+  item.className='feed-item';
+  item.innerHTML=`<span class="feed-item-drone">${msg.d}</span><span class="feed-item-action">${msg.a}</span><span class="feed-item-time">just now</span>`;
+  list.insertBefore(item,list.firstChild);
+  // age existing items
+  const items=list.querySelectorAll('.feed-item-time');
+  items.forEach((el,i)=>{
+    if(i===0)return;
+    if(el.textContent==='just now')el.textContent='1m ago';
+  });
+  if(list.children.length>6)list.removeChild(list.lastChild);
+}
+setInterval(addFeedItem,8000);
+</script>
+</body>
+</html>
