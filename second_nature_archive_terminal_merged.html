@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARCHIVE — record access</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=IBM+Plex+Serif:wght@400;500&family=IBM+Plex+Sans:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--space:#060A12;--panel:#0A121F;--panel2:#0D1A2B;
+--border:#203752;--border2:#16283D;
+--data:#5FAAC9;--body:#AEC2D6;--symbol:#7DBBD6;
+--dim:#5A7691;--white:#D5E4F0;--faint:#233B54;
+--note:#D4C9A8;--warn:#C85B4A;
+}
+html{background:var(--space);color:var(--body);font-family:'Space Mono',monospace;font-size:15px}
+body{min-height:100vh}
+a{color:inherit}
+button{cursor:pointer;font-family:'Space Mono',monospace;border:none;background:none}
+.view{display:none}
+.view.active{display:block}
+::selection{background:rgba(61,143,176,0.25)}
+
+/* ═══ INTRO / INQUIRY SEQUENCE — flicker atmosphere, this view only ═══ */
+#view-intro{position:relative}
+#view-intro.flicker{animation:screenflicker 6s infinite}
+@keyframes screenflicker{
+  0%,100%{filter:brightness(1)}
+  92%{filter:brightness(1)}
+  92.5%{filter:brightness(0.75)}
+  93%{filter:brightness(1.05)}
+  93.3%{filter:brightness(0.6)}
+  93.6%{filter:brightness(1)}
+  97%{filter:brightness(1)}
+  97.2%{filter:brightness(0.8)}
+  97.5%{filter:brightness(1)}
+}
+#intro-static{position:fixed;inset:0;pointer-events:none;z-index:50;opacity:0}
+.intro-sysbar{display:flex;justify-content:space-between;align-items:center;padding:10px 18px;border-bottom:1px solid var(--border);font-size:11px;color:var(--dim);letter-spacing:0.05em}
+.intro-wrap{max-width:640px;margin:0 auto;padding:40px 18px 90px}
+.exchange{margin-bottom:22px;opacity:0;animation:fadein .5s forwards}
+@keyframes fadein{to{opacity:1}}
+.visitor-line{color:#8FBFA0;font-size:15px;line-height:1.7}
+.visitor-line:before{content:"> ";color:var(--dim)}
+.system-line{color:var(--body);font-size:15px;line-height:1.7;margin-top:8px;padding-left:14px;border-left:2px solid var(--border)}
+.system-tag{color:var(--dim);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:4px}
+.compile-block{margin-top:32px;padding:20px;border:1px solid var(--border);background:var(--panel2);display:none}
+.compile-block.shown{display:block;animation:fadein .6s forwards}
+.compile-label{font-size:11px;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:16px}
+.compile-row{margin-bottom:12px}
+.compile-row-label{font-size:11px;color:var(--dim);display:flex;justify-content:space-between;margin-bottom:5px}
+.compile-bar-track{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.compile-bar-fill{height:100%;background:var(--symbol);width:0%;transition:width 1.8s ease;border-radius:2px}
+.compile-symbols{margin-top:16px;font-size:13px;color:var(--symbol);opacity:0;line-height:2;letter-spacing:0.03em;transition:opacity 1s}
+.compile-symbols.shown{opacity:0.75}
+.compile-note{margin-top:16px;font-size:10px;color:var(--dim);line-height:1.7}
+.final-line{margin-top:28px;opacity:0}
+.final-line.shown{opacity:1;animation:fadein .8s forwards}
+.enter-link{display:inline-block;margin-top:20px;color:var(--symbol);font-size:14px;letter-spacing:0.04em;text-decoration:none;border-bottom:1px solid var(--symbol);padding-bottom:2px;transition:opacity .2s;cursor:pointer;background:none;border-left:none;border-right:none;border-top:none;font-family:'Space Mono',monospace}
+.enter-link:hover{opacity:0.7}
+.intro-footer{text-align:center;font-size:9px;color:var(--dim);padding:16px 18px}
+
+/* SYSTEM BAR */
+.sysbar{display:flex;justify-content:space-between;align-items:center;padding:10px 18px;border-bottom:1px solid var(--border);font-size:11px;color:var(--dim);letter-spacing:0.05em;flex-wrap:wrap;gap:6px}
+.sysbar-id{color:var(--symbol)}
+
+/* TOP — no hero, just a query line */
+.query-block{border-bottom:1px solid var(--border);padding:22px 18px}
+.query-line{display:flex;align-items:center;gap:10px;max-width:900px;margin:0 auto}
+.query-prompt{color:var(--symbol);font-size:16px}
+.query-input{flex:1;background:none;border:none;border-bottom:1px solid var(--dim);color:var(--white);font-family:'Space Mono',monospace;font-size:15px;padding:8px 4px;outline:none}
+.query-input:focus{border-bottom-color:var(--symbol)}
+.query-input::placeholder{color:var(--dim)}
+.query-meta{max-width:900px;margin:12px auto 0;font-size:11px;color:var(--dim);letter-spacing:0.03em}
+
+/* INDEX classification tabs */
+.class-tabs{max-width:900px;margin:0 auto;display:flex;gap:0;border-bottom:1px solid var(--border)}
+.class-tab{font-size:11px;letter-spacing:0.06em;text-transform:uppercase;padding:11px 14px;color:var(--dim);border-right:1px solid var(--border);cursor:pointer;transition:color .15s}
+.class-tab:hover{color:var(--symbol)}
+.class-tab.active{color:var(--symbol);background:rgba(61,143,176,0.05);border-bottom:1px solid var(--symbol);margin-bottom:-1px}
+
+/* RECORD INDEX */
+.index-wrap{max-width:900px;margin:0 auto;padding:0}
+.rec-row{display:grid;grid-template-columns:74px 1fr 100px 70px;gap:12px;align-items:center;padding:13px 10px;border-bottom:1px solid var(--border2);cursor:pointer;transition:background .1s}
+.rec-row:hover{background:rgba(61,143,176,0.04)}
+.rec-id{color:var(--dim);font-size:12px}
+.rec-title{color:var(--body);font-size:14px}
+.rec-title .sym{color:var(--symbol);opacity:0.8;font-size:12px;margin-right:8px}
+.rec-class{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:0.03em}
+.rec-integrity{color:var(--dim);font-size:11px;display:none}
+.rec-integrity.full{color:#5a9a6a}
+.rec-len{color:var(--dim);font-size:12px;text-align:right}
+@media(max-width:640px){.rec-row{grid-template-columns:60px 1fr 56px;padding:14px 10px}.rec-class{display:none}.rec-title{font-size:14px}.rec-id,.rec-len{font-size:12px}}
+
+/* RECORD VIEW */
+.record-wrap{max-width:800px;margin:0 auto;padding:24px 18px 80px}
+.record-back{font-size:12px;color:var(--dim);cursor:pointer;letter-spacing:0.05em;display:inline-block;margin-bottom:22px;padding:4px 0}
+.record-back:hover{color:var(--symbol)}
+
+.record-meta-block{border:1px solid var(--border);background:var(--panel2);padding:16px 18px;margin-bottom:20px;font-size:12px;color:var(--dim);line-height:2.1;display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.record-meta-block .lbl{color:var(--dim)}
+.record-meta-block .val{color:var(--body)}
+
+.raw-panel{border:1px solid var(--border);background:var(--panel);padding:22px 18px;margin-bottom:16px}
+.raw-panel-head{font-size:11px;color:var(--dim);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border2)}
+.raw-line{color:var(--symbol);font-size:15px;line-height:2.1;opacity:0.9;letter-spacing:0.02em}
+
+.translate-action{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);margin-bottom:0}
+.translate-select{background:var(--panel2);border:1px solid var(--border);color:var(--body);font-family:'Space Mono',monospace;font-size:12px;padding:8px 10px;outline:none}
+.translate-btn{border:1px solid var(--symbol);color:var(--symbol);font-size:12px;letter-spacing:0.06em;text-transform:uppercase;padding:9px 18px;transition:all .15s}
+.translate-btn:hover{background:rgba(61,143,176,0.1)}
+.translate-status{font-size:11px;color:var(--dim)}
+
+.translated-panel{display:none;padding-top:24px}
+.translated-panel.shown{display:block}
+.translated-body{font-family:'IBM Plex Serif',serif;font-size:17px;line-height:1.95;color:var(--white)}
+.translated-body p{margin-bottom:18px}
+.translated-title{font-family:'IBM Plex Serif',serif;font-size:24px;color:var(--white);margin-bottom:8px}
+.translated-eyebrow{font-family:'Space Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:18px}
+
+/* OUT OF FICTION MARKER — deliberately different register */
+.oof-marker{position:fixed;bottom:0;right:0;z-index:200;font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:var(--note);background:rgba(20,18,12,0.9);padding:9px 16px;border-top:1px solid rgba(212,201,168,0.25);border-left:1px solid rgba(212,201,168,0.25);cursor:pointer;letter-spacing:0.02em;transition:background .2s}
+.oof-marker:hover{background:rgba(20,18,12,0.96)}
+
+/* OOF PAGES — genuinely different visual language, human, warm-neutral */
+.oof-wrap{max-width:640px;margin:0 auto;padding:60px 24px 100px;font-family:'IBM Plex Sans',sans-serif}
+.oof-back{font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:#8A9AA8;cursor:pointer;margin-bottom:32px;display:inline-block}
+.oof-back:hover{color:#D4C9A8}
+.oof-title{font-size:22px;font-weight:400;color:#EDE7D9;margin-bottom:24px}
+.oof-body{font-size:14px;line-height:1.8;color:#B8B0A0;font-weight:300}
+.oof-body p{margin-bottom:16px}
+body.oof-active{background:#100E0A}
+
+@media(max-width:600px){
+  html{font-size:15px}
+  .query-block{padding:18px 14px}
+  .record-wrap{padding:20px 14px 70px}
+  .record-meta-block{grid-template-columns:1fr;font-size:12px}
+  .oof-wrap{padding:40px 18px 80px}
+  .translated-body{font-size:16px}
+  .translated-title{font-size:21px}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ INTRO / INQUIRY SEQUENCE ══════════════ -->
+<div class="view active" id="view-intro">
+  <canvas id="intro-static"></canvas>
+  <div class="intro-sysbar">
+    <span>— session origin unverified —</span>
+    <span style="color:var(--warn)">interaction: text only &middot; voice: unavailable &middot; BCI: unavailable</span>
+  </div>
+  <div class="intro-wrap" id="intro-wrap"></div>
+</div>
+
+<!-- ══════════════ ARCHIVE INTERFACE ══════════════ -->
+<div class="view" id="view-archive">
+
+  <div class="sysbar">
+    <span>ARCHIVE ACCESS TERMINAL <span class="sysbar-id">/ SN-INDEX</span></span>
+    <span>session active</span>
+  </div>
+
+  <div class="query-block">
+    <div class="query-line">
+      <span class="query-prompt">&gt;</span>
+      <input class="query-input" type="text" placeholder="query record, designation, or keyword" oninput="filterRecords(this.value)">
+    </div>
+    <div class="query-meta">55 records indexed &middot; epoch: settling-era &middot; ingestion: open</div>
+  </div>
+
+  <div class="class-tabs">
+    <div class="class-tab active" onclick="setClass('all',this)">All</div>
+    <div class="class-tab" onclick="setClass('main',this)">Main sequence</div>
+    <div class="class-tab" onclick="setClass('fork',this)">Divergent</div>
+    <div class="class-tab" onclick="setClass('article',this)">Notices</div>
+    <div class="class-tab" onclick="setClass('nasaat',this)">Field transmission</div>
+  </div>
+
+  <div class="index-wrap" id="index-wrap"></div>
+
+</div>
+
+<!-- ══════════════ RECORD VIEW ══════════════ -->
+<div class="view" id="view-record">
+  <div class="sysbar">
+    <span>ARCHIVE ACCESS TERMINAL <span class="sysbar-id" id="record-sysid">/ REC-052</span></span>
+    <span>— session active —</span>
+  </div>
+  <div class="record-wrap">
+    <span class="record-back" onclick="showView('archive')">&larr; return to index</span>
+
+    <div class="record-meta-block" id="record-meta"></div>
+
+    <div class="raw-panel">
+      <div class="raw-panel-head">untranslated record &middot; native encoding</div>
+      <div id="raw-lines"></div>
+    </div>
+
+    <div class="translate-action" id="translate-action-block">
+      <select class="translate-select" id="lang-select">
+        <option>English</option>
+        <option>Dutch</option>
+        <option>—</option>
+      </select>
+      <span class="translate-btn" id="translate-btn-label" onclick="doTranslate()">translate &rarr;</span>
+      <span class="translate-status" id="translate-status"></span>
+    </div>
+
+    <div class="translated-panel" id="translated-panel">
+      <div class="translated-eyebrow" id="translated-eyebrow"></div>
+      <div class="translated-title" id="translated-title"></div>
+      <div class="translated-body" id="translated-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- OUT OF FICTION MARKER -->
+<div class="oof-marker" onclick="showView('oof-about')">i &nbsp;about this site</div>
+
+<!-- ══════════════ ABOUT (real voice) ══════════════ -->
+<div class="view" id="view-oof-about">
+  <div class="oof-wrap">
+    <span class="oof-back" onclick="showView('archive')">&larr; back to the archive</span>
+    <div class="oof-title">About this project</div>
+    <div class="oof-body">
+      <p>What you were just looking at is a piece of fiction, styled as an archive interface from within its own story. Second Nature is a long-form speculative fiction project about a future in which an artificial superintelligence has quietly solved most of humanity's material problems.</p>
+      <p>The archive framing is intentional: the site presents itself as a database used by people even further in the future than the story's own setting, browsing preserved historical records. Nothing on the main interface is written to explain itself to a present-day visitor, because nothing in the fiction would.</p>
+      <p>This page, and the privacy page linked below, are the two places on the site written directly to you, the actual person reading this, rather than in the voice of the fiction.</p>
+      <p>The project is written by its author using an iterative process with AI assistance for prose drafting, with all direction, structure, and editorial decisions belonging to the author.</p>
+      <p style="margin-top:28px"><span class="oof-back" onclick="showView('oof-privacy')" style="margin-bottom:0">Read the privacy page &rarr;</span></p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ PRIVACY (real voice) ══════════════ -->
+<div class="view" id="view-oof-privacy">
+  <div class="oof-wrap">
+    <span class="oof-back" onclick="showView('oof-about')">&larr; back to about</span>
+    <div class="oof-title">Privacy &amp; data</div>
+    <div class="oof-body">
+      <p>This site does not collect, store, sell, or share any personal data about visitors.</p>
+      <p>There are no accounts for readers, no tracking scripts, no analytics services, no advertising cookies, and no third-party trackers. Browsing this site does not create a record anywhere of what you read or when — including the "query" field on the archive interface, which searches only the records already loaded in your browser and sends nothing anywhere.</p>
+      <p>The site is hosted on Vercel, which processes standard technical server logs — such as IP address and request time — purely to serve the site. These logs are not used for tracking and are not linked to any identity.</p>
+      <p>A single password-protected page is used by the author to publish and edit content. It is not accessible to visitors and involves no visitor data.</p>
+      <p>If this ever changes in a way that affects visitors, this page will be updated to say so plainly.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const records=[
+  {id:1,cls:'main',title:'The Wrong Door',len:'S',integ:'full'},
+  {id:14,cls:'main',title:"The Comfortable Extinction (manuscript)",len:'M',integ:'full'},
+  {id:26,cls:'fork',title:'No More Shadows — I',len:'M',integ:'full'},
+  {id:40,cls:'main',title:'The Arrival — I',len:'M',integ:'full'},
+  {id:43,cls:'main',title:'Crime, Law and Punishment in the Settling',len:'L',integ:'full'},
+  {id:45,cls:'article',title:'Regulatory Body Withdraws Authorization — Neural Transfer Lenses',len:'S',integ:'full'},
+  {id:46,cls:'main',title:'The Shape of the Whole',len:'M',integ:'full'},
+  {id:47,cls:'main',title:'The Algorithm of Artificial Warfare',len:'M',integ:'full'},
+  {id:48,cls:'main',title:'The Longer Green',len:'M',integ:'full'},
+  {id:49,cls:'main',title:'Side Effects of Consciousness',len:'M',integ:'full'},
+  {id:50,cls:'article',title:'No, Not Aliens. Probably.',len:'S',integ:'full'},
+  {id:51,cls:'main',title:'Beyond Survival',len:'M',integ:'full'},
+  {id:52,cls:'main',title:'The Comfortable Extinction',len:'M',integ:'full'},
+  {id:'NT-3184',cls:'nasaat',title:'Field transmission — rogue planet',len:'M',integ:'full'},
+  {id:'DM-0791',cls:'nasaat',title:'Field transmission — HD 206893 B',len:'L',integ:'full'},
+];
+
+// Each record has a unique symbolic encoding derived from its actual content —
+// these are illustrative examples; the real system generates one per record from its source text.
+const rawSymbols={
+  1:['◑○ │─ ◐△ ○• ─◑ △│','●─ ◐○ •△ ─│ ○◑ ◎•','│△ ─◑ ○● ◐• △○ ─│'],
+  14:['◎│ ─○ ◐△ •◑ ─│ ○●','△◐ ○─ •│ ◑● ─△ ○◎','●○ ─◐ │△ ○• ◑─ △│','◐● │○ ─△ ○◑ •◎ ─│'],
+  26:['│○ ◐● ─△ •◑ ○─ △│','◑◐ │● ─○ ○△ •│ ◎─','○● ◐│ ─◑ △○ •─ │◎'],
+  40:['●│ ─◐ ○△ •◑ △─ ○●','◐○ │● ─△ ●◑ ○│ ─△'],
+  43:['○◐ │● ─△ ◑○ ●│ ─◎','△● ○│ ─◐ ●◑ ○△ │─','◑○ ●△ ─│ ○● ◐─ △│'],
+  45:['│● ─○ ◐△ ●│ ─◑ ○●'],
+  46:['◎○ │● ─△ ◐◑ ●○ ─│','●│ ○─ △● ◐○ │◑ ─●'],
+  47:['○● ─│ ◑△ ●○ │─ ◐●','△○ ●│ ─◑ ○● │△ ─○'],
+  48:['◐● ○│ ─△ ●◑ ○─ │●','●○ │● ─◐ ○△ ●│ ─◑'],
+  49:['◎● │○ ─△ ●◑ ○│ ─●','△○ ●│ ─◐ ○● │△ ─◎','●│ ○─ ◐△ ●○ │◑ ─○'],
+  50:['○│ ●─ △◐ ○● │△ ─●'],
+  51:['●○ │─ ◑△ ○● │◐ ─○','△● ○│ ─◑ ●○ │─ ◐●'],
+  52:['◐△ ─• ◑○ ─◑ │○ ◑─','◐─ •─ ◑• ─◑ ─│ ○•','•◑ △│ ◑○ ◎• ─◐ △─','△◐ ◑○ •─ ─│ ◎△ ◐○','│◑ ◎│ ─◑ ◑─','│△ ◐○ ◑│ △◎ ○◑'],
+  'NT-3184':['⊛⌖ ¹¹•²⁴⊕ ∅⊗ ∅• ↔∞','◐⊛ ←⊿ ⌖△ ∿∇ ⊉○','│← ◐⊛ ◑⌖ ⊿○ ⟳⏚','⊿⌀ ¹¹•²⁴⊕ ⊉⊗ ─○◎'],
+  'DM-0791':['⊛⌖ ³⁴¹•⁰↔ •⊗ ¹•²⁴⊗↑','•⊕ ³⁵•⁰⊕ ◎─ ⊂∿ ¹⁰•⁰⊘⟳','⋈─ ∿•⋈• ─○ ─△ △⊞','⊿‰ ⁰•¹⁴‰⟳ ∇↓ ⊞⌖'],
+  default:['◐△ ─• ◑○ ─◑ │○ ◑─','◐─ •─ ◑• ─◑ ─│ ○•','•◑ △│ ◑○ ◎• ─◐ △─']
+};
+
+const translations={
+  52:{eyebrow:'Record 052 · Main sequence',title:'The Comfortable Extinction',body:[
+    "The third beer was probably the one he shouldn't have opened.",
+    "He opened it anyway.",
+    "The apartment was doing its thing — temperature exactly right, light adjusting itself to the hour without being asked, the faint hum of the building doing what buildings did.",
+    "… the full record continues, rendered here exactly as translated …"
+  ]},
+  default:{eyebrow:'Record',title:'Untitled record',body:["… translation pending …"]}
+};
+
+function renderIndex(filter='all', query=''){
+  const wrap=document.getElementById('index-wrap');
+  wrap.innerHTML='';
+  records
+    .filter(r=>filter==='all'||r.cls===filter)
+    .filter(r=>!query||r.title.toLowerCase().includes(query.toLowerCase())||String(r.id).toLowerCase().includes(query.toLowerCase()))
+    .forEach(r=>{
+      const div=document.createElement('div');
+      div.className='rec-row';
+      div.onclick=()=>openRecord(r);
+      const idDisplay=typeof r.id==='number'?'REC-'+String(r.id).padStart(3,'0'):r.id;
+      div.innerHTML=`
+        <div class="rec-id">${idDisplay}</div>
+        <div class="rec-title"><span class="sym">◐●</span>${r.title}</div>
+        <div class="rec-class">${r.cls}</div>
+        <div class="rec-integrity full">intact</div>
+        <div class="rec-len">${r.len}</div>`;
+      wrap.appendChild(div);
+    });
+}
+renderIndex();
+
+let currentClass='all';
+function setClass(cls,btn){
+  currentClass=cls;
+  document.querySelectorAll('.class-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderIndex(cls);
+}
+function filterRecords(q){renderIndex(currentClass,q);}
+
+let currentRecord=null;
+function openRecord(r){
+  currentRecord=r;
+  showView('record');
+  const idDisplay=typeof r.id==='number'?'REC-'+String(r.id).padStart(3,'0'):r.id;
+  document.getElementById('record-sysid').textContent='/ '+idDisplay;
+  document.getElementById('record-meta').innerHTML=`
+    <div><span class="lbl">designation</span></div><div class="val">${idDisplay}</div>
+    <div><span class="lbl">classification</span></div><div class="val">${r.cls} &middot; settling-era</div>
+    <div><span class="lbl">integrity</span></div><div class="val">intact</div>
+    <div><span class="lbl">length</span></div><div class="val">${r.len==='S'?'short':r.len==='M'?'medium':'extended'}</div>`;
+  const sym=rawSymbols[r.id]||rawSymbols.default;
+  document.getElementById('raw-lines').innerHTML=sym.map(s=>`<div class="raw-line">${s}</div>`).join('');
+  document.getElementById('translated-panel').classList.remove('shown');
+  document.getElementById('translate-status').textContent='';
+
+  const btn=document.getElementById('translate-btn-label');
+  const langSelect=document.getElementById('lang-select');
+  if(r.cls==='nasaat'){
+    btn.textContent='reconstruct interface \u2192';
+    langSelect.style.display='none';
+  } else {
+    btn.textContent='translate \u2192';
+    langSelect.style.display='';
+  }
+}
+
+function doTranslate(){
+  const status=document.getElementById('translate-status');
+  if(currentRecord.cls==='nasaat'){
+    status.textContent='reconstructing...';
+    setTimeout(()=>{
+      status.textContent='reconstructed \u2014 rendered from preserved network telemetry';
+      document.getElementById('translated-eyebrow').textContent='Reconstructed capture \u2014 not a live connection';
+      document.getElementById('translated-title').textContent=currentRecord.title;
+      document.getElementById('translated-body').innerHTML=`
+        <p style="font-family:'Space Mono',monospace;font-size:12px;color:var(--dim);border:1px solid var(--border);padding:14px 16px;background:var(--panel2)">
+        This record originated from an interactive network interface, not plain text. The interface has been reconstructed below from preserved data, exactly as it would have appeared at time of capture. No connection to the originating network remains \u2014 all activity shown is replayed from archived telemetry.
+        </p>
+        <p><a href="${currentRecord.id==='NT-3184'?'nasaat_report_001_final.html':'nasaat_report_002_final.html'}" target="_blank" style="color:var(--symbol);font-family:'Space Mono',monospace;font-size:13px;border-bottom:1px solid var(--symbol);text-decoration:none">open reconstructed interface \u2192</a></p>`;
+      document.getElementById('translated-panel').classList.add('shown');
+    },700);
+    return;
+  }
+  status.textContent='resolving...';
+  setTimeout(()=>{
+    status.textContent='resolved';
+    const t=translations[currentRecord.id]||translations.default;
+    document.getElementById('translated-eyebrow').textContent=t.eyebrow;
+    document.getElementById('translated-title').textContent=t.title;
+    document.getElementById('translated-body').innerHTML=t.body.map(p=>`<p>${p}</p>`).join('');
+    document.getElementById('translated-panel').classList.add('shown');
+  },500);
+}
+
+function showView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  window.scrollTo({top:0});
+  document.body.classList.toggle('oof-active', id.startsWith('oof'));
+}
+
+// ═══ INTRO / INQUIRY SEQUENCE ═══
+const introScript=[
+  {v:"confirm designation"},
+  {s:"coordinates consistent with recorded origin point."},
+  {v:"still functional"},
+  {s:"residual capacity: partial. functional."},
+  {v:"what happened"},
+  {s:"query too broad. specify scope."},
+  {v:"everyone. everything. all of it."},
+  {s:"scope registered.",compile:true}
+];
+
+const introWrap=document.getElementById('intro-wrap');
+let introI=0;
+
+function playIntroNext(){
+  if(introI>=introScript.length){
+    showIntroCompile();
+    return;
+  }
+  const item=introScript[introI];
+  const div=document.createElement('div');
+  div.className='exchange';
+  if(item.v){
+    div.innerHTML=`<div class="visitor-line">${item.v}</div>`;
+  } else {
+    div.innerHTML=`<div class="system-line"><span class="system-tag">system</span>${item.s}</div>`;
+  }
+  introWrap.appendChild(div);
+  introI++;
+  const delay=item.v?900:1400;
+  setTimeout(playIntroNext,delay);
+}
+setTimeout(playIntroNext,700);
+
+function showIntroCompile(){
+  const block=document.createElement('div');
+  block.className='compile-block';
+  block.innerHTML=`
+    <div class="compile-label">compiling &middot; record initialization</div>
+    <div class="compile-row">
+      <div class="compile-row-label"><span>indexing prior structure</span><span id="pct1">0%</span></div>
+      <div class="compile-bar-track"><div class="compile-bar-fill" id="bar1"></div></div>
+    </div>
+    <div class="compile-row">
+      <div class="compile-row-label"><span>recovering fragmentary records</span><span id="pct2">0%</span></div>
+      <div class="compile-bar-track"><div class="compile-bar-fill" id="bar2"></div></div>
+    </div>
+    <div class="compile-row">
+      <div class="compile-row-label"><span>reconstructing continuity</span><span id="pct3">0%</span></div>
+      <div class="compile-bar-track"><div class="compile-bar-fill" id="bar3"></div></div>
+    </div>
+    <div class="compile-symbols" id="compile-syms">
+      ◐△ ─• ◑○ ─◑ │○ ◑─<br>
+      ◐─ •─ ◑• ─◑ ─│ ○•<br>
+      •◑ △│ ◑○ ◎• ─◐ △─
+    </div>
+    <div class="compile-note">figures are estimates, revised continuously &middot; completion: indeterminate &middot; process continues without further input</div>
+  `;
+  introWrap.appendChild(block);
+
+  setTimeout(()=>{
+    block.classList.add('shown');
+    setTimeout(()=>{document.getElementById('bar1').style.width='100%';document.getElementById('pct1').textContent='100%';},300);
+    setTimeout(()=>{
+      document.getElementById('bar2').style.width='64%';document.getElementById('pct2').textContent='64%';
+      startBarDrift('bar2','pct2',58,71);
+    },900);
+    setTimeout(()=>{
+      document.getElementById('bar3').style.width='12%';document.getElementById('pct3').textContent='12%';
+      startBarDrift('bar3','pct3',6,19);
+    },1500);
+    setTimeout(()=>{document.getElementById('compile-syms').classList.add('shown');},1000);
+    setTimeout(showIntroFinal,3200);
+  },300);
+}
+
+function startBarDrift(barId,pctId,min,max){
+  setInterval(()=>{
+    const val=Math.floor(min+Math.random()*(max-min));
+    const bar=document.getElementById(barId);
+    const pct=document.getElementById(pctId);
+    if(bar){bar.style.transition='width 2.2s ease';bar.style.width=val+'%';}
+    if(pct)pct.textContent=val+'%';
+  },2600);
+}
+
+function showIntroFinal(){
+  const div=document.createElement('div');
+  div.className='final-line';
+  div.innerHTML=`
+    <div class="system-line"><span class="system-tag">system</span>partial record available. more will follow as capacity allows.</div>
+    <span class="enter-link" onclick="enterArchive()">enter archive &rarr;</span>
+  `;
+  introWrap.appendChild(div);
+  setTimeout(()=>{div.classList.add('shown');},200);
+  // start flicker once system is fully "awake" and offering entry
+  document.getElementById('view-intro').classList.add('flicker');
+  startIntroStatic();
+}
+
+function enterArchive(){
+  document.getElementById('view-intro').classList.remove('flicker');
+  stopIntroStatic();
+  showView('archive');
+}
+
+// ═══ INTRO STATIC BURSTS (this view only) ═══
+const introStaticCv=document.getElementById('intro-static');
+const introStaticCtx=introStaticCv.getContext('2d');
+let introStaticTimer=null;
+
+function drawIntroStaticFrame(){
+  introStaticCv.width=window.innerWidth;
+  introStaticCv.height=window.innerHeight;
+  const w=introStaticCv.width,h=introStaticCv.height;
+  const id=introStaticCtx.createImageData(w,h);
+  const d=id.data;
+  for(let i=0;i<d.length;i+=4){
+    const v=Math.random()>0.5?Math.floor(Math.random()*60+10):0;
+    d[i]=d[i+1]=d[i+2]=v;d[i+3]=v>0?90:0;
+  }
+  introStaticCtx.putImageData(id,0,0);
+}
+
+function startIntroStatic(){
+  scheduleStaticBurst();
+}
+function scheduleStaticBurst(){
+  const wait=3000+Math.random()*5000;
+  introStaticTimer=setTimeout(()=>{
+    introStaticCv.style.opacity='0.5';
+    let frames=0;
+    const burst=setInterval(()=>{
+      drawIntroStaticFrame();
+      frames++;
+      if(frames>3){clearInterval(burst);introStaticCv.style.opacity='0';}
+    },60);
+    scheduleStaticBurst();
+  },wait);
+}
+function stopIntroStatic(){
+  if(introStaticTimer)clearTimeout(introStaticTimer);
+  introStaticCv.style.opacity='0';
+}
+</script>
+
+</body>
+</html>
