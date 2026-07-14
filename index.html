@@ -82,6 +82,26 @@ button{cursor:pointer;font-family:'Space Mono',monospace;border:none;background:
 
 /* RECORD INDEX */
 .index-wrap{max-width:900px;margin:0 auto;padding:0}
+
+.entities-link{max-width:900px;margin:0 auto;padding:16px 8px;font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.05em;cursor:pointer;text-align:right;transition:color .2s;border-top:1px solid var(--border2)}
+.entities-link:hover{color:var(--symbol)}
+
+.char-wrap{max-width:900px;margin:0 auto;padding:24px 18px 80px}
+.char-back{font-size:12px;color:var(--dim);cursor:pointer;letter-spacing:0.05em;display:inline-block;margin-bottom:20px}
+.char-back:hover{color:var(--symbol)}
+.char-head{margin-bottom:8px}
+.char-head-title{font-size:14px;color:var(--dim);letter-spacing:0.04em;margin-bottom:4px}
+.char-head-note{font-size:11px;color:var(--dim);line-height:1.7;margin-bottom:24px;max-width:560px}
+.char-card{border:1px solid var(--border);background:var(--panel2);padding:16px 18px;margin-bottom:12px}
+.char-card-top{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.char-name{font-size:14px;color:var(--white)}
+.char-name.unresolved{color:var(--dim);font-style:italic}
+.char-status{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:0.06em;text-transform:uppercase}
+.char-meta{font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);line-height:2;margin-bottom:8px}
+.char-meta .lbl{color:var(--dim);display:inline-block;min-width:110px}
+.char-refs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.char-ref-tag{font-family:'Space Mono',monospace;font-size:9px;color:var(--symbol);border:1px solid var(--border);padding:3px 8px;cursor:pointer;transition:all .15s}
+.char-ref-tag:hover{border-color:var(--symbol);background:rgba(79,195,247,0.06)}
 .rec-row{display:grid;grid-template-columns:74px 1fr 100px 70px;gap:12px;align-items:center;padding:13px 10px;border-bottom:1px solid var(--border2);cursor:pointer;transition:background .1s}
 .rec-row:hover{background:rgba(61,143,176,0.04)}
 .rec-id{color:var(--dim);font-size:12px}
@@ -181,6 +201,8 @@ body.oof-active{background:#100E0A}
 
   <div class="index-wrap" id="index-wrap"></div>
 
+  <div class="entities-link" onclick="showView('characters')">cross-referenced entities &middot; compiled profiles</div>
+
 </div>
 
 <!-- ══════════════ RECORD VIEW ══════════════ -->
@@ -214,6 +236,22 @@ body.oof-active{background:#100E0A}
       <div class="translated-title" id="translated-title"></div>
       <div class="translated-body" id="translated-body"></div>
     </div>
+  </div>
+</div>
+
+<!-- ══════════════ CHARACTERS (system-compiled profiles) ══════════════ -->
+<div class="view" id="view-characters">
+  <div class="sysbar">
+    <span>ARCHIVE ACCESS TERMINAL <span class="sysbar-id">/ ENTITY-INDEX</span></span>
+    <span>session active</span>
+  </div>
+  <div class="char-wrap">
+    <span class="char-back" onclick="showView('archive')">&larr; return to index</span>
+    <div class="char-head">
+      <div class="char-head-title">Cross-referenced entities</div>
+      <div class="char-head-note">Profiles compiled by cross-referencing recurring designations across indexed records. Fields reflect what is directly attested in the record set; unresolved fields indicate no further data available at this access tier.</div>
+    </div>
+    <div id="char-list"></div>
   </div>
 </div>
 
@@ -263,6 +301,50 @@ body.oof-active{background:#100E0A}
 <script>
 // ═══ REAL DATA — fetched from manifest.json, not hardcoded ═══
 let records=[];
+
+// ═══ CROSS-REFERENCED ENTITIES — compiled profile data ═══
+const entities=[
+  { name:"[unresolved]", note:"Referred to only as 'her' across all attested records. Sole entity confirmed to address the system directly via a located access point.", status:"recurring · direct system contact", first:1, refs:[1,3,9,12,16,27,37,41,44,49] },
+  { name:"K", note:"Philosopher, correspondence and lecture records. Writes by hand; no digital originals located.", status:"recurring", first:42, refs:[42,47,49] },
+  { name:"Bastiaan", note:"Subject of a divergent record sequence. Living arrangement departs from standard Settling-era norms.", status:"recurring · divergent sequence", first:26, refs:["26.1","26.2"] },
+  { name:"[unresolved — 'the heir']", note:"Descendant of a pre-Settling technology lineage. Travel pattern inconsistent with typical Settling-era movement.", status:"recurring", first:24, refs:[24,40] },
+  { name:"Mads", note:"Attendee of a recurring peer gathering, designation and purpose only partially attested.", status:"recurring", first:52, refs:[52] },
+  { name:"Elin", note:"Co-attendee of the same gathering as designation 'Mads'. Relationship status between the two not resolved by available records.", status:"recurring", first:52, refs:[52] },
+  { name:"[unresolved — demographer]", note:"Author of a population-analysis record. Age and personal data self-reported within the record itself.", status:"single record", first:51, refs:[51] },
+  { name:"Lev Leverious Arend", note:"Named author, multiple notice-classification records. Recipient of a named acknowledgement per self-reported record content.", status:"recurring", first:50, refs:[50] },
+  { name:"[unresolved — 'the priest']", note:"Self-applied designation only. Leads a gathering of unconfirmed size on a recurring basis.", status:"single record", first:35, refs:[35] }
+];
+
+function renderCharacters(){
+  const list=document.getElementById('char-list');
+  list.innerHTML='';
+  entities.forEach(e=>{
+    const card=document.createElement('div');
+    card.className='char-card';
+    const refsHtml=e.refs.map(id=>{
+      const idDisplay=typeof id==='number'?'REC-'+String(id).padStart(3,'0'):id;
+      return `<span class="char-ref-tag" onclick="jumpToRecord('${id}')">${idDisplay}</span>`;
+    }).join('');
+    card.innerHTML=`
+      <div class="char-card-top">
+        <span class="char-name${e.name.startsWith('[')?' unresolved':''}">${e.name}</span>
+        <span class="char-status">${e.status}</span>
+      </div>
+      <div class="char-meta">
+        <span class="lbl">first record</span>${typeof e.first==='number'?'REC-'+String(e.first).padStart(3,'0'):e.first}<br>
+        <span class="lbl">cross-references</span>${e.refs.length}
+      </div>
+      <div style="font-size:12px;color:var(--body);line-height:1.7;font-weight:300">${e.note}</div>
+      <div class="char-refs">${refsHtml}</div>`;
+    list.appendChild(card);
+  });
+}
+
+function jumpToRecord(id){
+  const rec=records.find(r=>String(r.id)===String(id));
+  if(rec){ openRecord(rec); }
+}
+renderCharacters();
 
 fetch('manifest.json?v=' + Date.now())
   .then(res=>res.json())
