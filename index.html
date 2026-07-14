@@ -126,6 +126,14 @@ button{cursor:pointer;font-family:'Space Mono',monospace;border:none;background:
 .tl-access{text-align:center;font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);line-height:1.8;margin-top:8px}
 .tl-access strong{color:var(--symbol)}
 
+.tl-epoch-row{display:flex;align-items:stretch;height:34px;margin-bottom:4px}
+.tl-epoch-seg{position:relative;display:flex;align-items:center;justify-content:center;border-right:1px solid var(--space);cursor:pointer;transition:filter .2s;background:var(--faint)}
+.tl-epoch-seg:hover{filter:brightness(1.35)}
+.tl-epoch-seg.active{filter:brightness(1.5)}
+.tl-epoch-seg span{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.08em;color:var(--symbol);font-style:italic}
+.tl-epoch-gapspace{flex:0 0 104px}
+.tl-epoch-label{text-align:center;font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:14px}
+
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
 .sys-pulse{display:inline-flex;align-items:center;gap:6px}
 .sys-pulse-dot{width:5px;height:5px;border-radius:50%;background:var(--symbol);animation:blink 2.2s infinite}
@@ -195,6 +203,9 @@ body.oof-active{background:#100E0A}
   .tl-seg span{font-size:6.5px;letter-spacing:0.02em}
   .tl-gap{flex:0 0 40px}
   .tl-bar-row{height:64px}
+  .tl-epoch-seg span{font-size:6.5px;letter-spacing:0.02em}
+  .tl-epoch-row{height:44px}
+  .tl-epoch-gapspace{flex:0 0 40px}
 }
 </style>
 </head>
@@ -303,6 +314,9 @@ body.oof-active{background:#100E0A}
     <span class="tl-back" onclick="showView('archive')">&larr; return to index</span>
     <div class="tl-head-title">Temporal reconstruction</div>
     <div class="tl-head-note">Period boundaries inferred by cross-referencing structural markers across indexed records. Boundaries are approximate; exact placement of individual records within a period is not resolved by available data.</div>
+
+    <div class="tl-epoch-label">real-world epoch terminology, cross-referenced</div>
+    <div class="tl-epoch-row" id="tl-epoch-row"></div>
 
     <div class="tl-bar-row" id="tl-bar-row"></div>
     <div class="tl-labels-row" id="tl-labels-row"></div>
@@ -427,7 +441,30 @@ const eras=[
     confidence:"confidence: high — most heavily attested period" }
 ];
 
+const epochs=[
+  { label:"ANTHROPOCENE", weight:12,
+    note:"Term for the preceding geological epoch, defined by human-driven planetary impact. In wide use throughout pre-Settling-era records. Corresponds, in this reconstruction, to the Before period." },
+  { label:"LIMINOCENE", weight:30,
+    note:"Term applied to the threshold epoch between the Anthropocene and Symbiocene, extending the earlier anthropological concept of liminality \u2014 a state of transition without stable structure \u2014 to a planetary scale. Corresponds, in this reconstruction, to the Coordination Years and the Transition." },
+  { label:"SYMBIOCENE", weight:58,
+    note:"Term for a proposed epoch of full reintegration between human systems and living systems, first articulated in pre-Settling-era records as an aspiration rather than an achieved condition. Corresponds, in this reconstruction, to Early Settling onward \u2014 with no confirmed end point in the available record set, including, per available inference, the present access period." }
+];
+
 function renderTimeline(){
+  const epochRow=document.getElementById('tl-epoch-row');
+  epochRow.innerHTML='';
+  epochs.forEach(ep=>{
+    const seg=document.createElement('div');
+    seg.className='tl-epoch-seg';
+    seg.style.flex=ep.weight+' 0 0';
+    seg.onclick=()=>showEpochNote(ep,seg);
+    seg.innerHTML=`<span>${ep.label}</span>`;
+    epochRow.appendChild(seg);
+  });
+  const epochGap=document.createElement('div');
+  epochGap.className='tl-epoch-gapspace';
+  epochRow.appendChild(epochGap);
+
   const bar=document.getElementById('tl-bar-row');
   const labels=document.getElementById('tl-labels-row');
   bar.innerHTML='';
@@ -460,8 +497,20 @@ function renderTimeline(){
   showEraNote(eras[eras.length-1], null);
 }
 
+function showEpochNote(ep, segEl){
+  document.querySelectorAll('.tl-seg').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tl-epoch-seg').forEach(s=>s.classList.remove('active'));
+  if(segEl) segEl.classList.add('active');
+  document.getElementById('tl-note-target').innerHTML=`
+    <div class="tl-note-block">
+      <div class="tl-note-title">${ep.label} <span style="color:var(--dim);font-weight:400;text-transform:none;font-style:italic">&middot; real-world term, cross-referenced</span></div>
+      <div class="tl-note-body">${ep.note}</div>
+    </div>`;
+}
+
 function showEraNote(e, segEl){
   document.querySelectorAll('.tl-seg').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tl-epoch-seg').forEach(s=>s.classList.remove('active'));
   if(segEl) segEl.classList.add('active');
   document.getElementById('tl-note-target').innerHTML=`
     <div class="tl-note-block">
