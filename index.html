@@ -264,7 +264,7 @@ body.oof-active{background:#100E0A}
 // ═══ REAL DATA — fetched from manifest.json, not hardcoded ═══
 let records=[];
 
-fetch('manifest.json')
+fetch('manifest.json?v=' + Date.now())
   .then(res=>res.json())
   .then(data=>{
     records=data;
@@ -419,7 +419,7 @@ function doTranslate(){
   status.textContent='resolving...';
   const idDisplay=typeof currentRecord.id==='number'?'REC-'+String(currentRecord.id).padStart(3,'0'):currentRecord.id;
 
-  fetch(currentRecord.file)
+  fetch(currentRecord.file + '?v=' + Date.now())
     .then(res=>{
       if(!res.ok) throw new Error('not found');
       return res.text();
