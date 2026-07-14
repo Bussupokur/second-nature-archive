@@ -314,6 +314,13 @@ function generateSymbols(record){
   return lines;
 }
 
+// ═══ Strips the old "# Second Nature / ## Title / ---" header some source files still carry ═══
+// The archive already shows the title from its own metadata, so this redundant
+// in-body heading is removed automatically before rendering, wherever it appears.
+function stripLegacyHeader(body){
+  return body.replace(/^\s*#\s*Second Nature[\s\S]*?\n\s*---\s*\n+/,'');
+}
+
 // ═══ Simple frontmatter parser — splits the small ---key: value--- header from the markdown body ═══
 function parseFrontmatter(raw){
   const match=raw.match(/^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/);
@@ -419,10 +426,11 @@ function doTranslate(){
     })
     .then(raw=>{
       const {meta,body}=parseFrontmatter(raw);
+      const cleanBody=stripLegacyHeader(body);
       status.textContent='resolved';
       document.getElementById('translated-eyebrow').textContent=`Record ${idDisplay} \u00b7 ${meta.cls||currentRecord.cls}`;
       document.getElementById('translated-title').textContent=meta.title||currentRecord.title;
-      document.getElementById('translated-body').innerHTML=marked.parse(body);
+      document.getElementById('translated-body').innerHTML=marked.parse(cleanBody);
       document.getElementById('translated-panel').classList.add('shown');
     })
     .catch(()=>{
