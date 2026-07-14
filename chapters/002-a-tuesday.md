@@ -1,7 +1,3 @@
-# Second Nature
-## A Tuesday
-
----
 
 The robot in the garden doesn't know it's Tuesday.
 
