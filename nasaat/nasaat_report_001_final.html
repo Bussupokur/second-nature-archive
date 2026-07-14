@@ -457,14 +457,16 @@ function resizeTracker(){
   const a=document.getElementById('view-area');
   W=tCv.width=a.offsetWidth;H=tCv.height=a.offsetHeight;
   cx=W*.5;cy=H*.45;pR=Math.min(W,H)*.2;oR=pR*1.72;
-  stars=Array.from({length:160},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.2+.2,a:Math.random()*.5+.15}));
+  if(stars.length===0){
+    stars=Array.from({length:160},()=>({rx:Math.random(),ry:Math.random(),r:Math.random()*1.2+.2,a:Math.random()*.5+.15}));
+  }
 }
 
 function isBehind(a){return Math.sin(a)>0&&Math.abs(Math.cos(a)*oR)<pR*.92;}
 
 function drawTracker(){
   tCtx.clearRect(0,0,W,H);
-  stars.forEach(s=>{tCtx.beginPath();tCtx.arc(s.x,s.y,s.r,0,Math.PI*2);tCtx.fillStyle=`rgba(200,220,240,${s.a})`;tCtx.fill();});
+  stars.forEach(s=>{tCtx.beginPath();tCtx.arc(s.rx*W,s.ry*H,s.r,0,Math.PI*2);tCtx.fillStyle=`rgba(200,220,240,${s.a})`;tCtx.fill();});
   const g=tCtx.createRadialGradient(cx,cy,pR*.25,cx,cy,pR);
   g.addColorStop(0,'#1A3A5C');g.addColorStop(.5,'#0D2438');g.addColorStop(.85,'#060F1E');g.addColorStop(1,'#030810');
   tCtx.beginPath();tCtx.arc(cx,cy,pR,0,Math.PI*2);tCtx.fillStyle=g;tCtx.fill();
