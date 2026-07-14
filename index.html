@@ -126,6 +126,18 @@ button{cursor:pointer;font-family:'Space Mono',monospace;border:none;background:
 .tl-access{text-align:center;font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);line-height:1.8;margin-top:8px}
 .tl-access strong{color:var(--symbol)}
 
+.gauge-row{display:flex;gap:28px;margin:20px 0 10px;flex-wrap:wrap}
+.gauge-item{display:flex;flex-direction:column;align-items:center;gap:6px;width:110px}
+.gauge-svg{width:64px;height:64px;transform:rotate(-90deg)}
+.gauge-track{fill:none;stroke:var(--border);stroke-width:5}
+.gauge-fill{fill:none;stroke:var(--symbol);stroke-width:5;stroke-linecap:round;stroke-dasharray:213.6;stroke-dashoffset:213.6;transition:stroke-dashoffset 1.6s cubic-bezier(.2,.7,.2,1)}
+.gauge-label{font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);letter-spacing:0.05em;text-align:center;line-height:1.4;text-transform:uppercase}
+.gauge-val{font-family:'Space Mono',monospace;font-size:13px;color:var(--symbol);font-weight:700}
+.gauge-caveat{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:0.03em;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border2)}
+
+@keyframes textwaver{0%,100%{opacity:1;letter-spacing:normal}50%{opacity:0.72;letter-spacing:0.5px}}
+.tw-flicker{animation:textwaver .32s ease}
+
 .tl-epoch-row{display:flex;align-items:stretch;height:34px;margin-bottom:4px}
 .tl-epoch-seg{position:relative;display:flex;align-items:center;justify-content:center;border-right:1px solid var(--space);cursor:pointer;transition:filter .2s;background:var(--faint)}
 .tl-epoch-seg:hover{filter:brightness(1.35)}
@@ -206,6 +218,9 @@ body.oof-active{background:#100E0A}
   .tl-epoch-seg span{font-size:6.5px;letter-spacing:0.02em}
   .tl-epoch-row{height:44px}
   .tl-epoch-gapspace{flex:0 0 40px}
+  .gauge-row{gap:16px;justify-content:center}
+  .gauge-item{width:90px}
+  .gauge-svg{width:52px;height:52px}
 }
 </style>
 </head>
@@ -283,6 +298,27 @@ body.oof-active{background:#100E0A}
     <div class="translated-panel" id="translated-panel">
       <div class="translated-eyebrow" id="translated-eyebrow"></div>
       <div class="translated-title" id="translated-title"></div>
+
+      <div class="gauge-row" id="gauge-row">
+        <div class="gauge-item">
+          <svg class="gauge-svg" viewBox="0 0 80 80">
+            <circle class="gauge-track" cx="40" cy="40" r="34"></circle>
+            <circle class="gauge-fill" id="gauge-parity" cx="40" cy="40" r="34"></circle>
+          </svg>
+          <div class="gauge-label">human parity</div>
+          <div class="gauge-val" id="gauge-parity-val">0%</div>
+        </div>
+        <div class="gauge-item">
+          <svg class="gauge-svg" viewBox="0 0 80 80">
+            <circle class="gauge-track" cx="40" cy="40" r="34"></circle>
+            <circle class="gauge-fill" id="gauge-stylo" cx="40" cy="40" r="34"></circle>
+          </svg>
+          <div class="gauge-label">stylometric indistinguishability</div>
+          <div class="gauge-val" id="gauge-stylo-val">0%</div>
+        </div>
+      </div>
+      <div class="gauge-caveat" id="gauge-caveat">self-assessed against internal benchmark &middot; no external verification available at this access tier</div>
+
       <div class="translated-body" id="translated-body"></div>
     </div>
   </div>
@@ -675,6 +711,8 @@ function openRecord(r){
   document.getElementById('raw-lines').innerHTML=sym.map(s=>`<div class="raw-line">${s}</div>`).join('');
   document.getElementById('translated-panel').classList.remove('shown');
   document.getElementById('translate-status').textContent='';
+  if(waverTimer){clearTimeout(waverTimer);waverTimer=null;}
+  resetGauges();
 
   const btn=document.getElementById('translate-btn-label');
   const langSelect=document.getElementById('lang-select');
@@ -691,6 +729,8 @@ function doTranslate(){
   const status=document.getElementById('translate-status');
 
   if(currentRecord.cls==='nasaat'){
+    document.getElementById('gauge-row').style.display='none';
+    document.getElementById('gauge-caveat').style.display='none';
     playTrace(status,['parsing capture format...','locating preserved telemetry...','reconstructing interface state...'],()=>{
       status.textContent='reconstructed \u2014 rendered from preserved network telemetry';
       document.getElementById('translated-eyebrow').textContent='Reconstructed capture \u2014 not a live connection';
@@ -706,6 +746,8 @@ function doTranslate(){
   }
 
   const idDisplay=typeof currentRecord.id==='number'?'REC-'+String(currentRecord.id).padStart(3,'0'):currentRecord.id;
+  document.getElementById('gauge-row').style.display='flex';
+  document.getElementById('gauge-caveat').style.display='block';
 
   playTrace(status,[
     'parsing native encoding...',
@@ -727,6 +769,8 @@ function doTranslate(){
         document.getElementById('translated-title').textContent=meta.title||currentRecord.title;
         document.getElementById('translated-body').innerHTML=marked.parse(cleanBody);
         document.getElementById('translated-panel').classList.add('shown');
+        animateGauges(currentRecord.id);
+        scheduleWaver();
       })
       .catch(()=>{
         status.textContent='unresolved \u2014 source file unreachable';
@@ -764,6 +808,69 @@ function recordDrift(id){
   if(v<0.6) return 'minimal';
   if(v<0.88) return 'low';
   return 'moderate \u2014 flagged for review';
+}
+
+// ═══ SELF-ASSESSED GAUGES — human parity / stylometric indistinguishability ═══
+// Deliberately never near 100% — the reconstruction skill is still being rebuilt.
+const GAUGE_CIRC=213.6;
+
+function recordParity(id){
+  const rand=seededRandom(seedFromString('parity'+String(id)));
+  return Math.round(68+rand()*21);
+}
+function recordStylo(id){
+  const rand=seededRandom(seedFromString('stylo'+String(id)));
+  return Math.round(64+rand()*23);
+}
+
+function resetGauges(){
+  ['gauge-parity','gauge-stylo'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.style.transition='none';
+    el.style.strokeDashoffset=GAUGE_CIRC;
+  });
+  document.getElementById('gauge-parity-val').textContent='0%';
+  document.getElementById('gauge-stylo-val').textContent='0%';
+}
+
+function animateGauges(id){
+  const parity=recordParity(id);
+  const stylo=recordStylo(id);
+  const pEl=document.getElementById('gauge-parity');
+  const sEl=document.getElementById('gauge-stylo');
+  pEl.style.transition='';
+  sEl.style.transition='';
+  requestAnimationFrame(()=>{
+    pEl.style.strokeDashoffset=GAUGE_CIRC*(1-parity/100);
+    sEl.style.strokeDashoffset=GAUGE_CIRC*(1-stylo/100);
+  });
+  let pCount=0,sCount=0;
+  const pInt=setInterval(()=>{
+    pCount+=Math.max(1,Math.round(parity/20));
+    if(pCount>=parity){pCount=parity;clearInterval(pInt);}
+    document.getElementById('gauge-parity-val').textContent=pCount+'%';
+  },70);
+  const sInt=setInterval(()=>{
+    sCount+=Math.max(1,Math.round(stylo/20));
+    if(sCount>=stylo){sCount=stylo;clearInterval(sInt);}
+    document.getElementById('gauge-stylo-val').textContent=sCount+'%';
+  },80);
+}
+
+// ═══ ONE-TIME TEXT WAVER — a single brief, harmless flicker on one paragraph ═══
+// Never alters the actual text content, purely a transient visual effect.
+let waverTimer=null;
+function scheduleWaver(){
+  if(waverTimer) clearTimeout(waverTimer);
+  const delay=40000+Math.random()*50000;
+  waverTimer=setTimeout(()=>{
+    const paras=document.querySelectorAll('#translated-body p');
+    if(!paras.length) return;
+    const target=paras[Math.floor(Math.random()*paras.length)];
+    target.classList.add('tw-flicker');
+    setTimeout(()=>target.classList.remove('tw-flicker'),350);
+    waverTimer=null;
+  }, delay);
 }
 
 
