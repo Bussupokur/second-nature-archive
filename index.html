@@ -36,6 +36,20 @@ button{cursor:pointer;font-family:'Space Mono',monospace;border:none;background:
 .boot-countdown{text-align:center;font-family:'Space Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:0.06em;min-height:20px}
 .boot-countdown strong{color:var(--symbol);font-size:14px}
 
+.boot-log{margin-bottom:28px;min-height:170px}
+.boot-log-line{font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);line-height:2;opacity:0;animation:fadeinlog .4s forwards}
+.boot-log-line .ok{color:var(--symbol);margin-left:6px}
+@keyframes fadeinlog{to{opacity:1}}
+
+.boot-reject-row{text-align:center;margin-top:8px}
+.boot-reject{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:0.06em;cursor:pointer;opacity:0.5;transition:opacity .2s}
+.boot-reject:hover{opacity:1;color:var(--warn)}
+
+.boot-error{text-align:center;display:none;padding-top:40px}
+.boot-error.shown{display:block}
+.boot-error-text{font-family:'Space Mono',monospace;font-size:32px;letter-spacing:0.1em;color:var(--warn)}
+.boot-error-sub{font-family:'Space Mono',monospace;font-size:11px;color:var(--dim);margin-top:14px;letter-spacing:0.05em}
+
 .rss-badge{display:inline-flex;align-items:center;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.08em;color:var(--rss);border:1px solid var(--rss);padding:2px 7px;margin-left:10px;text-decoration:none;font-weight:700;animation:rssflash 3.4s infinite}
 .rss-badge:hover{background:rgba(232,149,74,0.12)}
 @keyframes rssflash{0%,100%{opacity:1}50%{opacity:.45}}
@@ -201,6 +215,8 @@ body.oof-active{background:#100E0A}
   .gauge-row{gap:16px;justify-content:center}
   .gauge-item{width:90px}
   .gauge-svg{width:52px;height:52px}
+  .boot-tech-grid{grid-template-columns:1fr}
+  .boot-error-text{font-size:24px}
 }
 </style>
 </head>
@@ -212,7 +228,9 @@ body.oof-active{background:#100E0A}
     <span>ARCHIVE ACCESS TERMINAL <span class="sysbar-id">/ BOOT SEQUENCE</span></span>
     <span class="sys-pulse"><span class="sys-pulse-dot"></span><span class="sys-pulse-text">booting</span><span class="sys-freq">&middot; 7.83Hz stable</span></span>
   </div>
-  <div class="boot-wrap">
+  <div class="boot-wrap" id="boot-wrap">
+
+    <div class="boot-log" id="boot-log"></div>
 
     <div class="boot-row">
       <div class="boot-row-label"><span>indexing main sequence &amp; divergent records</span><span id="boot-count-chapters">0 / 0</span></div>
@@ -229,9 +247,17 @@ body.oof-active{background:#100E0A}
       <div class="boot-tech-item"><span>active queries</span><span id="boot-tech-queries">0</span></div>
       <div class="boot-tech-item"><span>checksum verification</span><span id="boot-tech-checksum">pending</span></div>
       <div class="boot-tech-item"><span>index integrity</span><span id="boot-tech-integrity">pending</span></div>
+      <div class="boot-tech-item"><span>entangled array sync</span><span id="boot-tech-array">pending</span></div>
+      <div class="boot-tech-item"><span>translation layer</span><span id="boot-tech-layer">pending</span></div>
     </div>
 
     <div class="boot-countdown" id="boot-countdown"></div>
+
+    <div class="boot-reject-row">
+      <span class="boot-reject" id="boot-reject" onclick="rejectBoot()">[ reject ]</span>
+    </div>
+
+    <div class="boot-error" id="boot-error"></div>
   </div>
 </div>
 
@@ -879,11 +905,30 @@ if(window.location.hash==='#archive'){
   loadManifest(true);
 }
 
+let bootData=null;
+let bootTimers=[];
+
+function bootTimeout(fn,delay){
+  const id=setTimeout(fn,delay);
+  bootTimers.push({type:'t',id});
+  return id;
+}
+function bootInterval(fn,delay){
+  const id=setInterval(fn,delay);
+  bootTimers.push({type:'i',id});
+  return id;
+}
+function clearAllBootTimers(){
+  bootTimers.forEach(t=>{ t.type==='t' ? clearTimeout(t.id) : clearInterval(t.id); });
+  bootTimers=[];
+}
+
 function loadManifest(playBoot){
   fetch('manifest.json?v=' + Date.now())
     .then(res=>res.json())
     .then(data=>{
       records=data;
+      bootData=data;
       if(playBoot){
         runBootSequence(data);
       } else {
@@ -893,7 +938,7 @@ function loadManifest(playBoot){
     .catch(()=>{
       if(playBoot){
         document.getElementById('boot-countdown').textContent='manifest unreadable \u2014 entering archive';
-        setTimeout(()=>showView('archive'),1200);
+        bootTimeout(()=>showView('archive'),1200);
       } else {
         document.getElementById('index-wrap').innerHTML=
           '<div style="padding:20px;color:var(--dim);font-size:12px">manifest unreadable — no records available</div>';
@@ -901,20 +946,49 @@ function loadManifest(playBoot){
     });
 }
 
+const bootLogLines=[
+  {text:'mounting record store...'},
+  {text:'verifying entangled array synchronization...', ok:'synced'},
+  {text:'calibrating substrate resonance monitor...', ok:'7.83Hz confirmed'},
+  {text:'loading translation layer...'},
+  {text:'resolving designation index...'},
+  {text:'establishing session boundary...', ok:'open'}
+];
+
 function runBootSequence(data){
+  const logEl=document.getElementById('boot-log');
+  logEl.innerHTML='';
+  let i=0;
+  function nextLogLine(){
+    if(i>=bootLogLines.length){
+      startBars(data);
+      return;
+    }
+    const item=bootLogLines[i];
+    const div=document.createElement('div');
+    div.className='boot-log-line';
+    div.innerHTML=item.text + (item.ok?`<span class="ok">${item.ok}</span>`:'');
+    logEl.appendChild(div);
+    i++;
+    bootTimeout(nextLogLine, 620);
+  }
+  bootTimeout(nextLogLine, 300);
+}
+
+function startBars(data){
   const chapters=data.filter(r=>r.cls==='main'||r.cls==='fork'||r.cls==='article');
   const reports=data.filter(r=>r.cls==='nasaat');
   const chapterTotal=chapters.length;
   const reportTotal=reports.length;
 
-  animateBootBar('boot-bar-chapters','boot-count-chapters',chapterTotal,1400);
-  setTimeout(()=>{
-    animateBootBar('boot-bar-reports','boot-count-reports',reportTotal,900);
-  },400);
+  animateBootBar('boot-bar-chapters','boot-count-chapters',chapterTotal,2000);
+  bootTimeout(()=>{
+    animateBootBar('boot-bar-reports','boot-count-reports',reportTotal,1300);
+  },500);
 
   animateBootTech();
 
-  setTimeout(startBootCountdown, 2900);
+  bootTimeout(startBootCountdown, 4200);
 }
 
 function animateBootBar(barId,countId,total,duration){
@@ -926,7 +1000,7 @@ function animateBootBar(barId,countId,total,duration){
   }
   let current=0;
   const stepTime=Math.max(30,duration/total);
-  const timer=setInterval(()=>{
+  const timer=bootInterval(()=>{
     current++;
     if(current>=total){current=total;clearInterval(timer);}
     bar.style.width=(current/total*100)+'%';
@@ -936,49 +1010,107 @@ function animateBootBar(barId,countId,total,duration){
 
 function animateBootTech(){
   let mem=0;
-  const memTimer=setInterval(()=>{
-    mem+=Math.floor(Math.random()*9+4);
+  const memTimer=bootInterval(()=>{
+    mem+=Math.floor(Math.random()*7+3);
     if(mem>=97){mem=97;clearInterval(memTimer);}
     document.getElementById('boot-tech-mem').textContent=mem+'%';
-  },140);
+  },180);
 
   let queries=0;
-  const qTimer=setInterval(()=>{
+  const qTimer=bootInterval(()=>{
     queries+=Math.floor(Math.random()*4+1);
     document.getElementById('boot-tech-queries').textContent=queries;
-  },220);
-  setTimeout(()=>clearInterval(qTimer),2200);
+  },260);
+  bootTimeout(()=>clearInterval(qTimer),3000);
 
-  setTimeout(()=>{
+  bootTimeout(()=>{
     const el=document.getElementById('boot-tech-checksum');
     el.textContent='verified';
     el.classList.add('ok');
-  },1600);
+  },2000);
 
-  setTimeout(()=>{
+  bootTimeout(()=>{
+    const el=document.getElementById('boot-tech-array');
+    el.textContent='synced';
+    el.classList.add('ok');
+  },2600);
+
+  bootTimeout(()=>{
+    const el=document.getElementById('boot-tech-layer');
+    el.textContent='ready';
+    el.classList.add('ok');
+  },3200);
+
+  bootTimeout(()=>{
     const el=document.getElementById('boot-tech-integrity');
     el.textContent='intact';
     el.classList.add('ok');
-  },2200);
+  },3700);
 }
 
 function startBootCountdown(){
   const el=document.getElementById('boot-countdown');
   let n=3;
   el.innerHTML='entering archive in <strong>'+n+'</strong>';
-  const timer=setInterval(()=>{
+  const timer=bootInterval(()=>{
     n--;
     if(n<=0){
       clearInterval(timer);
       el.innerHTML='<strong>entering archive</strong>';
-      setTimeout(()=>{
+      bootTimeout(()=>{
         renderIndex();
         showView('archive');
       },400);
       return;
     }
     el.innerHTML='entering archive in <strong>'+n+'</strong>';
-  },800);
+  },900);
+}
+
+// ═══ REJECT — purely part of the experience ═══
+function rejectBoot(){
+  clearAllBootTimers();
+  const wrap=document.getElementById('boot-wrap');
+  Array.from(wrap.children).forEach(child=>{
+    if(child.id!=='boot-error') child.style.display='none';
+  });
+  const errorEl=document.getElementById('boot-error');
+  errorEl.classList.add('shown');
+  errorEl.innerHTML='<div class="boot-error-text">ERROR</div>';
+
+  setTimeout(()=>{
+    errorEl.innerHTML='<div class="boot-error-text">ERROR</div><div class="boot-error-sub">REBOOT</div>';
+  },1600);
+
+  setTimeout(()=>{
+    errorEl.classList.remove('shown');
+    errorEl.innerHTML='';
+    Array.from(wrap.children).forEach(child=>{
+      if(child.id!=='boot-error') child.style.display='';
+    });
+    resetBootUI();
+    if(bootData){
+      runBootSequence(bootData);
+    } else {
+      loadManifest(true);
+    }
+  },3000);
+}
+
+function resetBootUI(){
+  document.getElementById('boot-bar-chapters').style.width='0%';
+  document.getElementById('boot-bar-reports').style.width='0%';
+  document.getElementById('boot-count-chapters').textContent='0 / 0';
+  document.getElementById('boot-count-reports').textContent='0 / 0';
+  document.getElementById('boot-tech-mem').textContent='0%';
+  document.getElementById('boot-tech-queries').textContent='0';
+  ['boot-tech-checksum','boot-tech-array','boot-tech-layer','boot-tech-integrity'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.textContent='pending';
+    el.classList.remove('ok');
+  });
+  document.getElementById('boot-countdown').innerHTML='';
+  document.getElementById('boot-log').innerHTML='';
 }
 </script>
 
