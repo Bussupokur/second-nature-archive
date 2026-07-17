@@ -12,7 +12,7 @@
 --border:#203752;--border2:#16283D;
 --data:#5FAAC9;--body:#AEC2D6;--symbol:#7DBBD6;
 --dim:#5A7691;--white:#D5E4F0;--faint:#233B54;
---note:#D4C9A8;--warn:#C85B4A;--rss:#E8954A;
+--note:#D4C9A8;--warn:#C85B4A;--rss:#E8954A;--active:#4ADE80;
 }
 html{background:var(--space);color:var(--body);font-family:'Space Mono',monospace;font-size:15px}
 body{min-height:100vh}
@@ -50,8 +50,11 @@ button{cursor:pointer;font-family:'Space Mono',monospace;border:none;background:
 .boot-error-text{font-family:'Space Mono',monospace;font-size:32px;letter-spacing:0.1em;color:var(--warn)}
 .boot-error-sub{font-family:'Space Mono',monospace;font-size:11px;color:var(--dim);margin-top:14px;letter-spacing:0.05em}
 
-.rss-badge{display:inline-flex;align-items:center;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.08em;color:var(--rss);border:1px solid var(--rss);padding:2px 7px;margin-left:10px;text-decoration:none;font-weight:700;animation:rssflash 3.4s infinite}
-.rss-badge:hover{background:rgba(232,149,74,0.12)}
+.status-badge{display:inline-flex;align-items:center;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.08em;border:1px solid currentColor;padding:2px 7px;margin-left:8px;text-decoration:none;font-weight:700}
+.status-badge:hover{opacity:0.75}
+.sb-red{color:var(--warn)}
+.sb-orange{color:var(--rss)}
+.sb-green{color:var(--active);animation:rssflash 3.4s infinite}
 @keyframes rssflash{0%,100%{opacity:1}50%{opacity:.45}}
 
 /* SYSTEM BAR */
@@ -217,6 +220,7 @@ body.oof-active{background:#100E0A}
   .gauge-svg{width:52px;height:52px}
   .boot-tech-grid{grid-template-columns:1fr}
   .boot-error-text{font-size:24px}
+  .status-badge{font-size:7px;padding:1px 5px;margin-left:5px}
 }
 </style>
 </head>
@@ -265,7 +269,7 @@ body.oof-active{background:#100E0A}
 <div class="view" id="view-archive">
 
   <div class="sysbar">
-    <span>ARCHIVE ACCESS TERMINAL <span class="sysbar-id">/ SN-INDEX</span><a href="/api/rss" class="rss-badge" title="RSS feed">RSS</a></span>
+    <span>ARCHIVE ACCESS TERMINAL <span class="sysbar-id">/ SN-INDEX</span><span class="status-badge sb-red" title="brain-computer interface: unavailable">BCI</span><span class="status-badge sb-orange" title="text interaction">TXT</span><span class="status-badge sb-red" title="voice: unavailable">VOICE</span><span class="status-badge sb-red" title="radio: unavailable">RDIO</span><span class="status-badge sb-red" title="quantum communication: unavailable">QCOM</span><a href="/api/rss" class="status-badge sb-green" title="RSS feed">RSS</a><span class="status-badge sb-red" title="email: unavailable">EMAIL</span><span class="status-badge sb-red" title="external connection: unavailable">EXT</span></span>
     <span class="sys-pulse"><span class="sys-pulse-dot"></span><span class="sys-pulse-text">idle</span><span class="sys-freq">&middot; 7.83Hz stable</span></span>
   </div>
 
