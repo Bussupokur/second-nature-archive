@@ -46,6 +46,11 @@ header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-betw
 .view-area{flex:1;position:relative;overflow:hidden;min-height:0}
 canvas#tracker{position:absolute;inset:0;width:100%;height:100%}
 canvas#cam-canvas{position:absolute;inset:0;width:100%;height:100%;display:none}
+canvas#radio-spectrogram{position:absolute;inset:0;width:100%;height:100%;display:none;background:#000}
+.radio-log{position:absolute;bottom:0;left:0;right:0;max-height:38%;overflow:hidden;display:none;background:linear-gradient(transparent,rgba(5,8,16,0.9) 30%);padding:10px 12px 8px;z-index:5}
+.radio-log-line{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);line-height:1.8;opacity:0;animation:radiologin .4s forwards}
+.radio-log-line.signal{color:var(--data)}
+@keyframes radiologin{to{opacity:1}}
 canvas#static-burst{position:absolute;inset:0;width:100%;height:100%;opacity:0;pointer-events:none;z-index:5}
 
 /* tracker overlays */
@@ -201,6 +206,8 @@ input.spec-range::-webkit-slider-thumb{appearance:none;width:14px;height:14px;bo
 
     <!-- camera canvas (static) -->
     <canvas id="cam-canvas"></canvas>
+    <canvas id="radio-spectrogram"></canvas>
+    <div class="radio-log" id="radio-log"></div>
     <div class="cam-tag" id="cam-tag"></div>
     <div class="cam-status-center" id="cam-status-center">
       <div class="cam-status-name" id="cam-status-name"></div>
@@ -577,6 +584,95 @@ const camData={
   therm:{name:'CAM-E · THERMAL',state:'offline'}
 };
 
+// ═══ RADIO — scrolling spectrogram + candidate signal log ═══
+const rCv=document.getElementById('radio-spectrogram');
+const rCtx=rCv.getContext('2d');
+let radioInterval=null;
+let radioLogTimer=null;
+let radioSignalFlash=0;
+let radioStreakX=0;
+
+function initRadioCanvas(){
+  const a=document.getElementById('view-area');
+  rCv.width=a.offsetWidth;
+  rCv.height=a.offsetHeight;
+  rCtx.fillStyle='#000';
+  rCtx.fillRect(0,0,rCv.width,rCv.height);
+}
+
+function drawRadioFrame(){
+  const w=rCv.width,h=rCv.height;
+  if(w<2||h<2)return;
+  const shift=2;
+  try{
+    const imgData=rCtx.getImageData(0,0,w,h-shift);
+    rCtx.putImageData(imgData,0,shift);
+  }catch(e){}
+  for(let y=0;y<shift;y++){
+    for(let x=0;x<w;x+=2){
+      const v=Math.random()*28;
+      rCtx.fillStyle='rgba(60,90,120,'+(v/100)+')';
+      rCtx.fillRect(x,y,2,1);
+    }
+  }
+  if(radioSignalFlash>0){
+    rCtx.fillStyle='rgba(125,187,214,0.9)';
+    rCtx.fillRect(radioStreakX,0,3,shift);
+    radioSignalFlash--;
+  }
+}
+
+function triggerRadioSignal(){
+  radioStreakX=Math.random()*rCv.width;
+  radioSignalFlash=45;
+}
+
+function startRadioSpectrogram(){
+  initRadioCanvas();
+  if(radioInterval)clearInterval(radioInterval);
+  radioInterval=setInterval(drawRadioFrame,70);
+}
+function stopRadioSpectrogram(){
+  if(radioInterval){clearInterval(radioInterval);radioInterval=null;}
+}
+
+const radioMessages=[
+  {text:'scan cycle complete — no anomalies'},
+  {text:'background noise only'},
+  {text:'background noise only'},
+  {text:'scan cycle complete — no anomalies'},
+  {text:'unknown narrow-band emission — forwarded — carrier spike detected — duration: 0.42s',signal:true},
+  {text:'candidate flagged: 1,612 MHz — insufficient repeat detections',signal:true},
+  {text:'false positive — terrestrial interference, satellite downlink band'},
+  {text:'background noise only'}
+];
+
+function addRadioLogLine(){
+  const logEl=document.getElementById('radio-log');
+  if(!logEl)return;
+  const msg=radioMessages[Math.floor(Math.random()*radioMessages.length)];
+  const div=document.createElement('div');
+  div.className='radio-log-line'+(msg.signal?' signal':'');
+  div.textContent=msg.text;
+  logEl.appendChild(div);
+  if(msg.signal)triggerRadioSignal();
+  while(logEl.children.length>6){logEl.removeChild(logEl.firstChild);}
+}
+
+function scheduleRadioLog(){
+  const delay=2200+Math.random()*3000;
+  radioLogTimer=setTimeout(()=>{
+    addRadioLogLine();
+    scheduleRadioLog();
+  },delay);
+}
+
+function stopRadioLog(){
+  if(radioLogTimer){clearTimeout(radioLogTimer);radioLogTimer=null;}
+  const logEl=document.getElementById('radio-log');
+  if(logEl)logEl.innerHTML='';
+}
+
 let currentView='tracker';
 
 function setView(view,btn){
@@ -593,7 +689,11 @@ function setView(view,btn){
   document.getElementById('cam-status-center').style.display='none';
   document.getElementById('spec-overlay').style.display='none';
   document.getElementById('spec-slider-overlay').style.display='none';
+  rCv.style.display='none';
+  document.getElementById('radio-log').style.display='none';
   stopCamStatic();
+  stopRadioSpectrogram();
+  stopRadioLog();
 
   if(view==='tracker'){
     tCv.style.display='block';
@@ -603,6 +703,13 @@ function setView(view,btn){
     document.getElementById('tracker-tag').style.display='block';
     document.getElementById('spec-overlay').style.display='block';
     document.getElementById('spec-slider-overlay').style.display='flex';
+  } else if(view==='radio'){
+    rCv.style.display='block';
+    document.getElementById('radio-log').style.display='block';
+    document.getElementById('cam-tag').style.display='block';
+    document.getElementById('cam-tag').textContent='ARRAY-D · RADIO · LISTENING';
+    startRadioSpectrogram();
+    scheduleRadioLog();
   } else {
     const d=camData[view];
     cCv.style.display='block';
