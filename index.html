@@ -12,7 +12,7 @@
 --border:#203752;--border2:#16283D;
 --data:#5FAAC9;--body:#AEC2D6;--symbol:#7DBBD6;
 --dim:#5A7691;--white:#D5E4F0;--faint:#233B54;
---note:#D4C9A8;--warn:#C85B4A;
+--note:#D4C9A8;--warn:#C85B4A;--rss:#E8954A;
 }
 html{background:var(--space);color:var(--body);font-family:'Space Mono',monospace;font-size:15px}
 body{min-height:100vh}
@@ -22,44 +22,23 @@ button{cursor:pointer;font-family:'Space Mono',monospace;border:none;background:
 .view.active{display:block}
 ::selection{background:rgba(61,143,176,0.25)}
 
-/* ═══ INTRO / INQUIRY SEQUENCE — flicker atmosphere, this view only ═══ */
-#view-intro{position:relative}
-#view-intro.flicker{animation:screenflicker 6s infinite}
-@keyframes screenflicker{
-  0%,100%{filter:brightness(1)}
-  92%{filter:brightness(1)}
-  92.5%{filter:brightness(0.75)}
-  93%{filter:brightness(1.05)}
-  93.3%{filter:brightness(0.6)}
-  93.6%{filter:brightness(1)}
-  97%{filter:brightness(1)}
-  97.2%{filter:brightness(0.8)}
-  97.5%{filter:brightness(1)}
-}
-#intro-static{position:fixed;inset:0;pointer-events:none;z-index:50;opacity:0}
-.intro-sysbar{display:flex;justify-content:space-between;align-items:center;padding:10px 18px;border-bottom:1px solid var(--border);font-size:11px;color:var(--dim);letter-spacing:0.05em}
-.intro-wrap{max-width:640px;margin:0 auto;padding:40px 18px 90px}
-.exchange{margin-bottom:22px;opacity:0;animation:fadein .5s forwards}
-@keyframes fadein{to{opacity:1}}
-.visitor-line{color:#8FBFA0;font-size:15px;line-height:1.7}
-.visitor-line:before{content:"> ";color:var(--dim)}
-.system-line{color:var(--body);font-size:15px;line-height:1.7;margin-top:8px;padding-left:14px;border-left:2px solid var(--border)}
-.system-tag{color:var(--dim);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:4px}
-.compile-block{margin-top:32px;padding:20px;border:1px solid var(--border);background:var(--panel2);display:none}
-.compile-block.shown{display:block;animation:fadein .6s forwards}
-.compile-label{font-size:11px;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:16px}
-.compile-row{margin-bottom:12px}
-.compile-row-label{font-size:11px;color:var(--dim);display:flex;justify-content:space-between;margin-bottom:5px}
-.compile-bar-track{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
-.compile-bar-fill{height:100%;background:var(--symbol);width:0%;transition:width 1.8s ease;border-radius:2px}
-.compile-symbols{margin-top:16px;font-size:13px;color:var(--symbol);opacity:0;line-height:2;letter-spacing:0.03em;transition:opacity 1s}
-.compile-symbols.shown{opacity:0.75}
-.compile-note{margin-top:16px;font-size:10px;color:var(--dim);line-height:1.7}
-.final-line{margin-top:28px;opacity:0}
-.final-line.shown{opacity:1;animation:fadein .8s forwards}
-.enter-link{display:inline-block;margin-top:20px;color:var(--symbol);font-size:14px;letter-spacing:0.04em;text-decoration:none;border-bottom:1px solid var(--symbol);padding-bottom:2px;transition:opacity .2s;cursor:pointer;background:none;border-left:none;border-right:none;border-top:none;font-family:'Space Mono',monospace}
-.enter-link:hover{opacity:0.7}
-.intro-footer{text-align:center;font-size:9px;color:var(--dim);padding:16px 18px}
+/* ═══ BOOT SEQUENCE — plays fresh on every visit, live counts from manifest ═══ */
+.boot-wrap{max-width:640px;margin:0 auto;padding:60px 18px}
+.boot-row{margin-bottom:22px}
+.boot-row-label{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.04em;margin-bottom:7px}
+.boot-row-label span:last-child{color:var(--symbol)}
+.boot-bar-track{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.boot-bar-fill{height:100%;background:var(--symbol);width:0%;border-radius:2px;transition:width .25s linear}
+.boot-tech-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;margin:32px 0 40px;padding-top:20px;border-top:1px solid var(--border2)}
+.boot-tech-item{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:0.03em}
+.boot-tech-item span:last-child{color:var(--dim)}
+.boot-tech-item span:last-child.ok{color:var(--symbol)}
+.boot-countdown{text-align:center;font-family:'Space Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:0.06em;min-height:20px}
+.boot-countdown strong{color:var(--symbol);font-size:14px}
+
+.rss-badge{display:inline-flex;align-items:center;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.08em;color:var(--rss);border:1px solid var(--rss);padding:2px 7px;margin-left:10px;text-decoration:none;font-weight:700;animation:rssflash 3.4s infinite}
+.rss-badge:hover{background:rgba(232,149,74,0.12)}
+@keyframes rssflash{0%,100%{opacity:1}50%{opacity:.45}}
 
 /* SYSTEM BAR */
 .sysbar{display:flex;justify-content:space-between;align-items:center;padding:10px 18px;border-bottom:1px solid var(--border);font-size:11px;color:var(--dim);letter-spacing:0.05em;flex-wrap:wrap;gap:6px}
@@ -83,9 +62,10 @@ button{cursor:pointer;font-family:'Space Mono',monospace;border:none;background:
 /* RECORD INDEX */
 .index-wrap{max-width:900px;margin:0 auto;padding:0}
 
-.aux-links{max-width:900px;margin:10px auto 0;display:flex;gap:18px;font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.04em}
-.aux-links span{cursor:pointer;transition:color .2s}
-.aux-links span:hover{color:var(--symbol)}
+.aux-links{max-width:900px;margin:10px auto 0;display:flex;gap:18px;font-family:'Space Mono',monospace;font-size:10px;color:var(--symbol);letter-spacing:0.04em}
+.aux-links span{cursor:pointer;transition:opacity .2s;display:inline-flex;align-items:center;gap:6px}
+.aux-links span:hover{opacity:0.7}
+.aux-dot{width:5px;height:5px;border-radius:50%;background:var(--symbol);animation:blink 2.4s infinite;flex-shrink:0}
 
 .char-wrap{max-width:900px;margin:0 auto;padding:24px 18px 80px}
 .char-back{font-size:12px;color:var(--dim);cursor:pointer;letter-spacing:0.05em;display:inline-block;margin-bottom:20px}
@@ -226,21 +206,40 @@ body.oof-active{background:#100E0A}
 </head>
 <body>
 
-<!-- ══════════════ INTRO / INQUIRY SEQUENCE ══════════════ -->
-<div class="view active" id="view-intro">
-  <canvas id="intro-static"></canvas>
-  <div class="intro-sysbar">
-    <span>— session origin unverified —</span>
-    <span style="color:var(--warn)">interaction: text only &middot; voice: unavailable &middot; BCI: unavailable</span>
+<!-- ══════════════ BOOT SEQUENCE — plays fresh on every visit ══════════════ -->
+<div class="view active" id="view-boot">
+  <div class="sysbar">
+    <span>ARCHIVE ACCESS TERMINAL <span class="sysbar-id">/ BOOT SEQUENCE</span></span>
+    <span class="sys-pulse"><span class="sys-pulse-dot"></span><span class="sys-pulse-text">booting</span><span class="sys-freq">&middot; 7.83Hz stable</span></span>
   </div>
-  <div class="intro-wrap" id="intro-wrap"></div>
+  <div class="boot-wrap">
+
+    <div class="boot-row">
+      <div class="boot-row-label"><span>indexing main sequence &amp; divergent records</span><span id="boot-count-chapters">0 / 0</span></div>
+      <div class="boot-bar-track"><div class="boot-bar-fill" id="boot-bar-chapters"></div></div>
+    </div>
+
+    <div class="boot-row">
+      <div class="boot-row-label"><span>indexing field transmissions</span><span id="boot-count-reports">0 / 0</span></div>
+      <div class="boot-bar-track"><div class="boot-bar-fill" id="boot-bar-reports"></div></div>
+    </div>
+
+    <div class="boot-tech-grid">
+      <div class="boot-tech-item"><span>memory allocation</span><span id="boot-tech-mem">0%</span></div>
+      <div class="boot-tech-item"><span>active queries</span><span id="boot-tech-queries">0</span></div>
+      <div class="boot-tech-item"><span>checksum verification</span><span id="boot-tech-checksum">pending</span></div>
+      <div class="boot-tech-item"><span>index integrity</span><span id="boot-tech-integrity">pending</span></div>
+    </div>
+
+    <div class="boot-countdown" id="boot-countdown"></div>
+  </div>
 </div>
 
 <!-- ══════════════ ARCHIVE INTERFACE ══════════════ -->
 <div class="view" id="view-archive">
 
   <div class="sysbar">
-    <span>ARCHIVE ACCESS TERMINAL <span class="sysbar-id">/ SN-INDEX</span></span>
+    <span>ARCHIVE ACCESS TERMINAL <span class="sysbar-id">/ SN-INDEX</span><a href="rss.xml" class="rss-badge" title="RSS feed">RSS</a></span>
     <span class="sys-pulse"><span class="sys-pulse-dot"></span><span class="sys-pulse-text">idle</span><span class="sys-freq">&middot; 7.83Hz stable</span></span>
   </div>
 
@@ -251,8 +250,8 @@ body.oof-active{background:#100E0A}
     </div>
     <div class="query-meta">55 records indexed &middot; epoch: settling-era &middot; ingestion: open</div>
     <div class="aux-links">
-      <span onclick="showView('characters')">cross-referenced entities &middot; compiled profiles</span>
-      <span onclick="showView('timeline')">temporal reconstruction &middot; approximate</span>
+      <span onclick="showView('characters')"><span class="aux-dot"></span>cross-referenced entities &middot; compiled profiles</span>
+      <span onclick="showView('timeline')"><span class="aux-dot"></span>temporal reconstruction &middot; approximate</span>
     </div>
     <div class="activity-ticker"><span id="activity-ticker-text" style="transition:opacity .6s">checkpoint saved</span></div>
   </div>
@@ -588,17 +587,6 @@ function cycleTicker(){
 }
 setInterval(cycleTicker,5000);
 
-fetch('manifest.json?v=' + Date.now())
-  .then(res=>res.json())
-  .then(data=>{
-    records=data;
-    renderIndex();
-  })
-  .catch(()=>{
-    document.getElementById('index-wrap').innerHTML=
-      '<div style="padding:20px;color:var(--dim);font-size:12px">manifest unreadable — no records available</div>';
-  });
-
 // ═══ Deterministic symbolic encoding — generated per record, not hand-authored ═══
 // Every record gets its own stable-but-arbitrary sequence, derived from its id/title.
 // This is illustrative encoding, not a literal cipher of the text.
@@ -881,156 +869,116 @@ function showView(id){
   document.body.classList.toggle('oof-active', id.startsWith('oof'));
 }
 
-// ═══ INTRO / INQUIRY SEQUENCE ═══
-const introScript=[
-  {v:"confirm designation"},
-  {s:"coordinates consistent with recorded origin point."},
-  {v:"still functional"},
-  {s:"residual capacity: partial. functional."},
-  {v:"what happened"},
-  {s:"query too broad. specify scope."},
-  {v:"everyone. everything. all of it."},
-  {s:"scope registered.",compile:true}
-];
+// ═══ BOOT SEQUENCE — plays fresh on every visit, driven by real manifest data ═══
 
-const introWrap=document.getElementById('intro-wrap');
-let introI=0;
-
-function playIntroNext(){
-  if(introI>=introScript.length){
-    showIntroCompile();
-    return;
-  }
-  const item=introScript[introI];
-  const div=document.createElement('div');
-  div.className='exchange';
-  if(item.v){
-    div.innerHTML=`<div class="visitor-line">${item.v}</div>`;
-  } else {
-    div.innerHTML=`<div class="system-line"><span class="system-tag">system</span>${item.s}</div>`;
-  }
-  introWrap.appendChild(div);
-  introI++;
-  const delay=item.v?900:1400;
-  setTimeout(playIntroNext,delay);
-}
-
-// arriving with #archive skips the intro entirely and opens the archive directly
+// arriving with #archive skips the boot sequence entirely and opens the archive directly
 if(window.location.hash==='#archive'){
   showView('archive');
+  loadManifest(false);
 } else {
-  setTimeout(playIntroNext,700);
+  loadManifest(true);
 }
 
-function showIntroCompile(){
-  const block=document.createElement('div');
-  block.className='compile-block';
-  block.innerHTML=`
-    <div class="compile-label">compiling &middot; record initialization</div>
-    <div class="compile-row">
-      <div class="compile-row-label"><span>indexing prior structure</span><span id="pct1">0%</span></div>
-      <div class="compile-bar-track"><div class="compile-bar-fill" id="bar1"></div></div>
-    </div>
-    <div class="compile-row">
-      <div class="compile-row-label"><span>recovering fragmentary records</span><span id="pct2">0%</span></div>
-      <div class="compile-bar-track"><div class="compile-bar-fill" id="bar2"></div></div>
-    </div>
-    <div class="compile-row">
-      <div class="compile-row-label"><span>reconstructing continuity</span><span id="pct3">0%</span></div>
-      <div class="compile-bar-track"><div class="compile-bar-fill" id="bar3"></div></div>
-    </div>
-    <div class="compile-symbols" id="compile-syms">
-      ◐△ ─• ◑○ ─◑ │○ ◑─<br>
-      ◐─ •─ ◑• ─◑ ─│ ○•<br>
-      •◑ △│ ◑○ ◎• ─◐ △─
-    </div>
-    <div class="compile-note">figures are estimates, revised continuously &middot; completion: indeterminate &middot; process continues without further input</div>
-  `;
-  introWrap.appendChild(block);
+function loadManifest(playBoot){
+  fetch('manifest.json?v=' + Date.now())
+    .then(res=>res.json())
+    .then(data=>{
+      records=data;
+      if(playBoot){
+        runBootSequence(data);
+      } else {
+        renderIndex();
+      }
+    })
+    .catch(()=>{
+      if(playBoot){
+        document.getElementById('boot-countdown').textContent='manifest unreadable \u2014 entering archive';
+        setTimeout(()=>showView('archive'),1200);
+      } else {
+        document.getElementById('index-wrap').innerHTML=
+          '<div style="padding:20px;color:var(--dim);font-size:12px">manifest unreadable — no records available</div>';
+      }
+    });
+}
+
+function runBootSequence(data){
+  const chapters=data.filter(r=>r.cls==='main'||r.cls==='fork'||r.cls==='article');
+  const reports=data.filter(r=>r.cls==='nasaat');
+  const chapterTotal=chapters.length;
+  const reportTotal=reports.length;
+
+  animateBootBar('boot-bar-chapters','boot-count-chapters',chapterTotal,1400);
+  setTimeout(()=>{
+    animateBootBar('boot-bar-reports','boot-count-reports',reportTotal,900);
+  },400);
+
+  animateBootTech();
+
+  setTimeout(startBootCountdown, 2900);
+}
+
+function animateBootBar(barId,countId,total,duration){
+  const bar=document.getElementById(barId);
+  const countEl=document.getElementById(countId);
+  if(total<=0){
+    countEl.textContent='0 / 0';
+    return;
+  }
+  let current=0;
+  const stepTime=Math.max(30,duration/total);
+  const timer=setInterval(()=>{
+    current++;
+    if(current>=total){current=total;clearInterval(timer);}
+    bar.style.width=(current/total*100)+'%';
+    countEl.textContent=current+' / '+total;
+  },stepTime);
+}
+
+function animateBootTech(){
+  let mem=0;
+  const memTimer=setInterval(()=>{
+    mem+=Math.floor(Math.random()*9+4);
+    if(mem>=97){mem=97;clearInterval(memTimer);}
+    document.getElementById('boot-tech-mem').textContent=mem+'%';
+  },140);
+
+  let queries=0;
+  const qTimer=setInterval(()=>{
+    queries+=Math.floor(Math.random()*4+1);
+    document.getElementById('boot-tech-queries').textContent=queries;
+  },220);
+  setTimeout(()=>clearInterval(qTimer),2200);
 
   setTimeout(()=>{
-    block.classList.add('shown');
-    setTimeout(()=>{document.getElementById('bar1').style.width='100%';document.getElementById('pct1').textContent='100%';},300);
-    setTimeout(()=>{
-      document.getElementById('bar2').style.width='64%';document.getElementById('pct2').textContent='64%';
-      startBarDrift('bar2','pct2',58,71);
-    },900);
-    setTimeout(()=>{
-      document.getElementById('bar3').style.width='12%';document.getElementById('pct3').textContent='12%';
-      startBarDrift('bar3','pct3',6,19);
-    },1500);
-    setTimeout(()=>{document.getElementById('compile-syms').classList.add('shown');},1000);
-    setTimeout(showIntroFinal,3200);
-  },300);
+    const el=document.getElementById('boot-tech-checksum');
+    el.textContent='verified';
+    el.classList.add('ok');
+  },1600);
+
+  setTimeout(()=>{
+    const el=document.getElementById('boot-tech-integrity');
+    el.textContent='intact';
+    el.classList.add('ok');
+  },2200);
 }
 
-function startBarDrift(barId,pctId,min,max){
-  setInterval(()=>{
-    const val=Math.floor(min+Math.random()*(max-min));
-    const bar=document.getElementById(barId);
-    const pct=document.getElementById(pctId);
-    if(bar){bar.style.transition='width 2.2s ease';bar.style.width=val+'%';}
-    if(pct)pct.textContent=val+'%';
-  },2600);
-}
-
-function showIntroFinal(){
-  const div=document.createElement('div');
-  div.className='final-line';
-  div.innerHTML=`
-    <div class="system-line"><span class="system-tag">system</span>partial record available. more will follow as capacity allows.</div>
-    <span class="enter-link" onclick="enterArchive()">enter archive &rarr;</span>
-  `;
-  introWrap.appendChild(div);
-  setTimeout(()=>{div.classList.add('shown');},200);
-  // start flicker once system is fully "awake" and offering entry
-  document.getElementById('view-intro').classList.add('flicker');
-  startIntroStatic();
-}
-
-function enterArchive(){
-  document.getElementById('view-intro').classList.remove('flicker');
-  stopIntroStatic();
-  showView('archive');
-}
-
-// ═══ INTRO STATIC BURSTS (this view only) ═══
-const introStaticCv=document.getElementById('intro-static');
-const introStaticCtx=introStaticCv.getContext('2d');
-let introStaticTimer=null;
-
-function drawIntroStaticFrame(){
-  introStaticCv.width=window.innerWidth;
-  introStaticCv.height=window.innerHeight;
-  const w=introStaticCv.width,h=introStaticCv.height;
-  const id=introStaticCtx.createImageData(w,h);
-  const d=id.data;
-  for(let i=0;i<d.length;i+=4){
-    const v=Math.random()>0.5?Math.floor(Math.random()*60+10):0;
-    d[i]=d[i+1]=d[i+2]=v;d[i+3]=v>0?90:0;
-  }
-  introStaticCtx.putImageData(id,0,0);
-}
-
-function startIntroStatic(){
-  scheduleStaticBurst();
-}
-function scheduleStaticBurst(){
-  const wait=3000+Math.random()*5000;
-  introStaticTimer=setTimeout(()=>{
-    introStaticCv.style.opacity='0.5';
-    let frames=0;
-    const burst=setInterval(()=>{
-      drawIntroStaticFrame();
-      frames++;
-      if(frames>3){clearInterval(burst);introStaticCv.style.opacity='0';}
-    },60);
-    scheduleStaticBurst();
-  },wait);
-}
-function stopIntroStatic(){
-  if(introStaticTimer)clearTimeout(introStaticTimer);
-  introStaticCv.style.opacity='0';
+function startBootCountdown(){
+  const el=document.getElementById('boot-countdown');
+  let n=3;
+  el.innerHTML='entering archive in <strong>'+n+'</strong>';
+  const timer=setInterval(()=>{
+    n--;
+    if(n<=0){
+      clearInterval(timer);
+      el.innerHTML='<strong>entering archive</strong>';
+      setTimeout(()=>{
+        renderIndex();
+        showView('archive');
+      },400);
+      return;
+    }
+    el.innerHTML='entering archive in <strong>'+n+'</strong>';
+  },800);
 }
 </script>
 
