@@ -245,18 +245,18 @@ input.spec-range::-webkit-slider-thumb{appearance:none;width:14px;height:14px;bo
       </div>
     </div>
 
-    <!-- artist's rendering — manual placeholder until real procedural visual exists for this body -->
+    <!-- system rendering — manual placeholder until real procedural visual exists for this body -->
     <div class="rendering-view" id="rendering-view">
-      <img id="rendering-img" src="renderings/nt-3184-rendering.jpg" alt="Artist's rendering" onerror="this.style.display='none';document.getElementById('rendering-missing').style.display='flex';">
+      <img id="rendering-img" src="renderings/nt-3184-rendering.jpg" alt="System rendering" onerror="this.style.display='none';document.getElementById('rendering-missing').style.display='flex';">
       <div class="rendering-missing" id="rendering-missing">
         <div class="rendering-missing-label">RENDERING &middot; NOT YET PROVIDED</div>
-        <div class="rendering-missing-sub">No artist's rendering has been uploaded for this record.</div>
+        <div class="rendering-missing-sub">No system rendering has been uploaded for this record.</div>
       </div>
       <div class="rendering-unavailable" id="rendering-unavailable">
         <div class="rendering-missing-label">RENDERING &middot; NOT NECESSARY</div>
         <div class="rendering-missing-sub">Full visual data is available directly \u2014 see camera feeds.</div>
       </div>
-      <div class="rendering-tag">ARTIST'S RENDERING &middot; NOT INSTRUMENT DATA</div>
+      <div class="rendering-tag">SYSTEM RENDERING &middot; NOT INSTRUMENT DATA</div>
     </div>
 
     <!-- static burst on switch -->
@@ -1015,7 +1015,7 @@ function stopRadioLog(){
 
 let currentView='tracker';
 
-// set true once real procedural visual data exists for this body — retires the artist's rendering automatically
+// set true once real procedural visual data exists for this body — retires the system rendering automatically
 const hasRealVisual = false;
 
 function setView(view,btn){
