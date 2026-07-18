@@ -66,6 +66,9 @@ canvas#static-burst{position:absolute;inset:0;width:100%;height:100%;opacity:0;p
 .rendering-tag{position:absolute;bottom:10px;left:10px;font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);background:rgba(5,8,16,0.75);padding:3px 8px;border:1px solid var(--border);letter-spacing:0.08em}
 
 /* tracker overlays */
+.fs-btn{position:absolute;top:10px;right:10px;width:28px;height:28px;background:rgba(5,8,16,0.7);border:1px solid var(--border);color:var(--dim);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;z-index:7}
+.fs-btn:hover{color:var(--data);border-color:var(--data)}
+.view-area:fullscreen, .view-area:-webkit-full-screen{width:100vw;height:100vh}
 .tracker-tag{position:absolute;top:10px;left:10px;font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);background:rgba(5,8,16,0.75);padding:3px 8px;border:1px solid var(--border);letter-spacing:0.1em;z-index:4}
 .drone-tip{position:absolute;background:rgba(5,8,16,0.92);border:1px solid var(--data);padding:6px 10px;font-family:'Space Mono',monospace;font-size:8px;color:var(--data);pointer-events:none;display:none;white-space:nowrap;z-index:10;line-height:1.6}
 
@@ -212,6 +215,7 @@ input.spec-range::-webkit-slider-thumb{appearance:none;width:14px;height:14px;bo
   </div>
 
   <div class="view-area" id="view-area">
+    <button class="fs-btn" id="fsBtn" onclick="toggleFullscreen()" title="fullscreen">⤢</button>
     <!-- tracker canvas (default) -->
     <canvas id="tracker"></canvas>
     <div class="tracker-tag" id="tracker-tag">ORBITAL TRACKER · NT-3184v1/M2-9KXR.1</div>
@@ -1143,6 +1147,23 @@ function submitRequest(){
   const c=document.getElementById('req-confirm');
   c.style.display='block';setTimeout(()=>{c.style.display='none';},4000);
 }
+
+function toggleFullscreen(){
+  const area = document.getElementById('view-area');
+  if(!document.fullscreenEnabled && !document.webkitFullscreenEnabled){
+    return; // silently unavailable in this browsing context (e.g. embedded preview, or iPhone Safari)
+  }
+  if(!document.fullscreenElement){
+    const req = area.requestFullscreen ? area.requestFullscreen() : (area.webkitRequestFullscreen ? area.webkitRequestFullscreen() : null);
+    if(req && req.catch){ req.catch(()=>{}); }
+  } else {
+    document.exitFullscreen ? document.exitFullscreen() : document.webkitExitFullscreen && document.webkitExitFullscreen();
+  }
+}
+document.addEventListener('fullscreenchange', ()=>{
+  resizeTracker();
+  resizeCamCanvas();
+});
 </script>
 </body>
 </html>
