@@ -240,8 +240,8 @@ input.spec-range::-webkit-slider-thumb{appearance:none;width:14px;height:14px;bo
       <div class="bar-track"><div class="bar-fill bar-therm" id="therm-bar" style="width:58%"></div></div>
     </div>
     <div class="inst">
-      <div class="inst-label">Biosig <span class="inst-val inst-flag" id="chem-val">scanning</span></div>
-      <div class="bar-track"><div class="bar-fill bar-chem" id="chem-bar" style="width:30%"></div></div>
+      <div class="inst-label">D/H ratio <span class="inst-val" id="chem-val">2.31×10⁻⁵ ↑</span></div>
+      <div class="bar-track"><div class="bar-fill bar-chem" id="chem-bar" style="width:68%"></div></div>
     </div>
     <div class="inst">
       <div class="inst-label">SAAAD <span class="inst-val" id="sig-val">idle ○</span></div>
@@ -313,7 +313,7 @@ input.spec-range::-webkit-slider-thumb{appearance:none;width:14px;height:14px;bo
         <label>Data type</label>
         <select>
           <option>Latest summary</option>
-          <option>Biosignature update</option>
+          <option>Isotopic analysis update</option>
           <option>Full dataset delta</option>
           <option>Trajectory and orbital</option>
           <option>Atmospheric composition</option>
@@ -339,7 +339,7 @@ input.spec-range::-webkit-slider-thumb{appearance:none;width:14px;height:14px;bo
         <div class="req-item" style="align-items:center">
           <div>
             <div class="req-item-text" style="color:var(--data)">001 · Rogue planet — first transmission</div>
-            <div style="font-family:'Space Mono',monospace;font-size:7px;color:var(--dim);margin-top:2px">Biosig · Origin · Trajectory · Surface water</div>
+            <div style="font-family:'Space Mono',monospace;font-size:7px;color:var(--dim);margin-top:2px">Isotopes · Origin · Trajectory · Surface water</div>
           </div>
           <div class="req-item-time" style="color:var(--data)">current</div>
         </div>
@@ -354,7 +354,7 @@ input.spec-range::-webkit-slider-thumb{appearance:none;width:14px;height:14px;bo
       </div>
       <div class="req-recent">
         <div class="req-recent-title">Recent requests</div>
-        <div class="req-item"><div class="req-item-text">Biosignature update · chirality threshold</div><div class="req-item-time">2h ago</div></div>
+        <div class="req-item"><div class="req-item-text">Isotopic analysis · D/H enhancement significance</div><div class="req-item-time">2h ago</div></div>
         <div class="req-item"><div class="req-item-text">Formation — ejection vs. collapse</div><div class="req-item-time">5h ago</div></div>
         <div class="req-item"><div class="req-item-text">Atmospheric composition delta</div><div class="req-item-time">11h ago</div></div>
         <div class="req-item"><div class="req-item-text">Surface temperature variance · 30-day</div><div class="req-item-time">1d ago</div></div>
@@ -439,8 +439,11 @@ input.spec-range::-webkit-slider-thumb{appearance:none;width:14px;height:14px;bo
     <h2>Surface and water</h2>
     <p>Full-depth atmospheric sounding returns surface temperatures consistent with standing liquid water across a meaningful fraction of the surface, maintained entirely by retained internal heat. No tidal partner detected within a range that could contribute meaningfully through flexing. The heat budget closes without one.</p>
     <h2>Chemistry and the biosignature question</h2>
-    <p>Spectroscopic and in-situ sampling shows organic chemistry above abiotic baseline — longer carbon chains than background synthesis typically sustains, with a distribution-evenness profile that does not match the smooth, monotonic curve abiotic chemistry tends to produce on its own. Amino acid analogues are present in trace quantity. Chirality measurement did not resolve to the confidence threshold required to call it decisive; carbon and nitrogen isotope ratios are flagged but not, alone, conclusive in either direction.</p>
-    <div class="flag-block"><strong>✦ Forwarded for system analysis</strong>Full chemical dataset and chirality results pending. Subscribe for updates.</div>
+    <p>Spectroscopic and in-situ sampling shows organic chemistry above abiotic baseline — longer carbon chains than background synthesis typically sustains, with a distribution-evenness profile that does not match the smooth, monotonic curve abiotic chemistry tends to produce on its own.</p>
+    <p><strong style="color:var(--white)">Isotopic analysis.</strong> Deuterium/hydrogen ratio measured via CH₃D absorption at 4.7 μm: <strong style="color:var(--data)">2.31 × 10⁻⁵</strong>, modestly enhanced relative to the protosolar baseline of 2.1 × 10⁻⁵. At this body's mass — 7.4 Jupiter masses, below the ~13 Jupiter mass threshold at which deuterium burning would have depleted the original reservoir — this measurement is meaningful rather than incidental. The enhancement is consistent with either extended atmospheric escape, favoring an older formation age, or deuterium-enriched material delivered during formation, bearing on the ejection-versus-collapse question below. Insufficient alone to resolve either.</p>
+    <p>Carbon-13/carbon-12 and nitrogen-15/nitrogen-14 ratios — the two isotope signatures most directly diagnostic of biological versus abiotic origin — require physical sampling and mass spectrometry to resolve with confidence. Not achievable from current orbital position.</p>
+    <p>Chirality measurement did not resolve to the confidence threshold required to call it decisive — circular polarization spectroscopy at this range is at the edge of current instrument capability. Amino acid analogues are present in trace quantity.</p>
+    <div class="flag-block"><strong>✦ Forwarded for system analysis</strong>δ13C and δ15N measurement flagged for a future surface mission. Chirality results pending. Subscribe for updates.</div>
     <h2>Origin and history</h2>
     <p>Formation pathway is unresolved: independent collapse from a sub-stellar cloud fragment, or ejection from a planetary system following a gravitational encounter. Surface dust accumulation, denser along the leading face, is consistent with extended unbound transit duration but does not distinguish between the two formation scenarios.</p>
     <div class="flag-block"><strong>✦ Forwarded for system analysis</strong>Cross-reference against free-floating body catalog pending.</div>
@@ -746,17 +749,17 @@ function drawWave(){
 }
 setInterval(drawWave,50);
 
-let gravBase=74,thermBase=58,chemBase=30;
+let gravBase=74,thermBase=58,chemBase=68;
 function updateInstruments(){
   gravBase+=(Math.random()-.5)*3;gravBase=Math.max(68,Math.min(82,gravBase));
   thermBase+=(Math.random()-.5)*4;thermBase=Math.max(48,Math.min(72,thermBase));
-  chemBase+=(Math.random()-.5)*5;chemBase=Math.max(20,Math.min(45,chemBase));
+  chemBase+=(Math.random()-.5)*2;chemBase=Math.max(64,Math.min(72,chemBase));
   document.getElementById('grav-bar').style.width=gravBase.toFixed(1)+'%';
   document.getElementById('therm-bar').style.width=thermBase.toFixed(1)+'%';
   document.getElementById('chem-bar').style.width=chemBase.toFixed(1)+'%';
   document.getElementById('grav-val').textContent=(7.38+Math.random()*.06).toFixed(2)+' Jₘ';
   document.getElementById('therm-val').textContent=Math.round(265+Math.random()*26)+'K';
-  document.getElementById('chem-val').textContent=['scanning','chirality?','δ¹³C flag','→ pending'][Math.floor(Math.random()*4)];
+  document.getElementById('chem-val').textContent=(2.28+Math.random()*.06).toFixed(2)+'×10⁻⁵ ↑';
   document.getElementById('sig-val').textContent=['idle ○','idle ○','idle ○','preparing ◑'][Math.floor(Math.random()*4)];
 }
 setInterval(updateInstruments,900);
