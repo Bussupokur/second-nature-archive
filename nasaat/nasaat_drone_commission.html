@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nasaat — Drone Commission (Demo)</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --space:#050810;--panel:#0B1628;--panel2:#0D1E35;
+  --border:#1A3A5C;--border2:#0F2540;
+  --data:#4FC3F7;--body:#C8DCF0;--symbol:#7FDBFF;
+  --flag:#FF6B35;--dim:#3A5570;--white:#E8F4FD;--green:#4ADE80;
+}
+html{background:var(--space);color:var(--body);font-family:'IBM Plex Sans',sans-serif;scroll-behavior:smooth}
+body{min-height:100vh}
+button{cursor:pointer;font-family:'Space Mono',monospace;border:none;background:none}
+
+.demo-badge{position:fixed;top:0;left:0;right:0;background:var(--flag);color:#1a0d05;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.08em;text-align:center;padding:5px;z-index:999}
+
+/* ── LANDING PAGE (mimics resting on the Nasaat platform, scrolled down) ── */
+.landing{max-width:900px;margin:0 auto;padding:60px 20px 120px}
+.landing-filler{color:var(--dim);font-family:'Space Mono',monospace;font-size:12px;line-height:2.4;opacity:0.5;margin-bottom:80px}
+
+.commission-teaser{border-top:1px solid var(--border);padding-top:32px;max-width:520px}
+.commission-eyebrow{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px}
+.commission-title{font-size:18px;color:var(--white);font-weight:500;margin-bottom:10px;cursor:pointer;transition:color .2s}
+.commission-title:hover{color:var(--data)}
+.commission-desc{font-size:13px;color:var(--dim);line-height:1.7;max-width:460px}
+.commission-link{display:inline-block;margin-top:14px;font-family:'Space Mono',monospace;font-size:10px;color:var(--data);letter-spacing:0.05em;text-decoration:none;border-bottom:1px solid var(--data);padding-bottom:2px;cursor:pointer}
+
+/* ── COMMISSION PAGE (choose / design) ── */
+.view{display:none;min-height:100vh}
+.view.active{display:block}
+
+.nav{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:1px solid var(--border)}
+.nav-back{font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.05em;cursor:pointer}
+.nav-back:hover{color:var(--data)}
+.nav-title{font-family:'Space Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:0.1em}
+.nav-badges{display:flex;gap:6px}
+.status-badge{display:inline-flex;align-items:center;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.08em;border:1px solid currentColor;padding:2px 6px;font-weight:700}
+.sb-red{color:#C85B4A}
+.sb-green{color:var(--green)}
+
+.commission-wrap{max-width:900px;margin:0 auto;padding:50px 20px}
+.commission-heading{font-size:24px;color:var(--white);font-weight:500;margin-bottom:12px}
+.commission-sub{font-size:13px;color:var(--dim);line-height:1.7;max-width:600px;margin-bottom:12px}
+.commission-limits{font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);line-height:1.9;background:var(--panel2);border:1px solid var(--border);padding:14px 16px;max-width:600px;margin-bottom:44px}
+.commission-limits strong{color:var(--data);display:block;margin-bottom:6px;letter-spacing:0.05em;text-transform:uppercase;font-size:9px}
+
+.path-choice{display:flex;gap:20px;flex-wrap:wrap}
+.path-card{flex:1;min-width:260px;border:1px solid var(--border);background:var(--panel);padding:26px;transition:all .2s;cursor:pointer}
+.path-card:hover{border-color:var(--data);background:var(--panel2)}
+.path-card-label{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px}
+.path-card-title{font-size:16px;color:var(--white);margin-bottom:10px}
+.path-card-desc{font-size:12px;color:var(--dim);line-height:1.6}
+
+/* ── GALLERY VIEW ── */
+.gallery-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:20px}
+@media(max-width:700px){.gallery-grid{grid-template-columns:1fr}}
+.drone-card{border:1px solid var(--border);background:var(--panel)}
+.drone-visual{height:220px;position:relative;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.drone-visual svg{width:70%;height:70%}
+.drone-placeholder-tag{position:absolute;bottom:8px;right:10px;font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);letter-spacing:0.05em;opacity:0.6}
+.drone-info{padding:16px 18px}
+.drone-designation{font-family:'Space Mono',monospace;font-size:10px;color:var(--data);letter-spacing:0.06em;margin-bottom:6px}
+.drone-origin{font-size:12px;color:var(--dim);line-height:1.6}
+
+/* ── DESIGN FLOW VIEW ── */
+.flow-stage{position:relative;height:460px;background:#000 radial-gradient(ellipse at center, rgba(26,58,92,0.12) 0%, transparent 70%), repeating-linear-gradient(0deg, rgba(79,195,247,0.025) 0px, transparent 1px, transparent 28px, rgba(79,195,247,0.025) 29px), repeating-linear-gradient(90deg, rgba(79,195,247,0.025) 0px, transparent 1px, transparent 28px, rgba(79,195,247,0.025) 29px);display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid var(--border)}
+
+.flow-header{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:rgba(5,8,16,0.7);border-bottom:1px solid var(--border);font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:0.08em;z-index:8}
+.flow-live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--dim);margin-right:7px;vertical-align:middle}
+.flow-live-dot.active{background:var(--green);animation:flowpulse 1.4s infinite}
+@keyframes flowpulse{0%,100%{opacity:1;box-shadow:0 0 4px var(--green)}50%{opacity:0.4;box-shadow:none}}
+
+.flow-corner{position:absolute;width:16px;height:16px;border-color:var(--border2);z-index:7;pointer-events:none}
+.flow-corner.tl{top:34px;left:8px;border-top:1px solid;border-left:1px solid}
+.flow-corner.tr{top:34px;right:8px;border-top:1px solid;border-right:1px solid}
+.flow-corner.bl{bottom:44px;left:8px;border-bottom:1px solid;border-left:1px solid}
+.flow-corner.br{bottom:44px;right:8px;border-bottom:1px solid;border-right:1px solid}
+
+.flow-telemetry{position:absolute;bottom:0;left:0;right:0;display:flex;background:rgba(5,8,16,0.7);border-top:1px solid var(--border);padding:8px 14px;gap:22px;z-index:8}
+.flow-tel-item{display:flex;flex-direction:column;gap:2px;font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);letter-spacing:0.05em}
+.flow-tel-item span:last-child{color:var(--data);font-size:10px}
+.flow-tel-item span:last-child.tel-ok{color:var(--green)}
+.flow-tel-item span:last-child.tel-fail{color:var(--flag)}
+.flow-log{position:absolute;top:46px;left:16px;font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);line-height:2;pointer-events:none}
+.flow-log-line{opacity:0;animation:fadein .4s forwards}
+.flow-log-line.ok{color:var(--green)}
+@keyframes fadein{to{opacity:1}}
+
+.flow-drone-flash{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .3s;pointer-events:none}
+.flow-drone-flash.shown{opacity:1}
+.flow-drone-flash svg{width:45%;height:45%}
+.flow-drone-flash-tag{position:absolute;bottom:20px;font-family:'Space Mono',monospace;font-size:10px;color:var(--data);letter-spacing:0.08em}
+
+.flow-static{position:absolute;inset:0;opacity:0;pointer-events:none}
+
+.flow-glitch-text{position:absolute;top:46px;left:16px;font-family:'Space Mono',monospace;font-size:11px;color:var(--flag);opacity:0;letter-spacing:0.03em;pointer-events:none}
+
+.crash-screen{position:absolute;inset:0;background:#1a5fb4;display:none;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:'Space Mono',monospace;text-align:center}
+.crash-face{font-size:64px;margin-bottom:20px;font-weight:400}
+.crash-line{font-size:11px;line-height:2;opacity:0.85}
+.crash-trace{font-size:9px;opacity:0.6;margin-top:14px}
+
+.fail-screen{position:absolute;inset:0;background:#000;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}
+.fail-title{font-family:'Space Mono',monospace;font-size:14px;color:var(--flag);letter-spacing:0.1em;margin-bottom:10px}
+.fail-sub{font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.03em}
+
+.flow-question{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:40px;text-align:center}
+.flow-question.shown{display:flex}
+.flow-question-text{font-family:'Space Mono',monospace;font-size:14px;color:var(--white);letter-spacing:0.02em}
+.flow-question-options{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:460px}
+.flow-input-row{display:flex;gap:8px;max-width:360px;width:100%}
+.flow-text-field{flex:1;font-family:'Space Mono',monospace;font-size:11px;color:var(--white);background:var(--panel2);border:1px solid var(--border);padding:10px 12px;outline:none}
+.flow-text-field:focus{border-color:var(--data)}
+.flow-response{position:absolute;top:46px;left:16px;right:16px;font-family:'Space Mono',monospace;font-size:10px;color:var(--flag);line-height:1.8;opacity:0;transition:opacity .4s;pointer-events:none}
+.flow-response.shown{opacity:1}
+.q-opt{font-family:'Space Mono',monospace;font-size:10px;color:var(--data);letter-spacing:0.05em;border:1px solid var(--border);padding:10px 16px;transition:all .15s;background:var(--panel2)}
+.q-opt:hover{border-color:var(--data);background:rgba(79,195,247,0.08)}
+.q-opt:disabled{opacity:0.35;cursor:default}
+.q-opt:disabled:hover{border-color:var(--border);background:var(--panel2)}
+
+.flow-wireframe{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.flow-wireframe svg{width:38%;height:38%;transition:none}
+.flow-wireframe #wf-hull,.flow-wireframe circle{transition:opacity 1.1s ease}
+
+.countdown-num{font-family:'Space Mono',monospace;font-size:40px;color:var(--data);margin-bottom:10px}
+
+.flow-start-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px}
+
+.flow-logo-mark{position:relative;width:56px;height:56px;margin-bottom:6px;animation:logofadein 1s ease forwards}
+.flow-logo-ring{position:absolute;inset:0;border:1px solid var(--data);border-radius:50%;opacity:0.5}
+.flow-logo-ring.r2{inset:12px;opacity:0.8;animation:logospin 8s linear infinite}
+.flow-logo-dot{position:absolute;top:50%;left:50%;width:5px;height:5px;background:var(--data);border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 8px var(--data)}
+@keyframes logospin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes logofadein{from{opacity:0;transform:scale(0.8)}to{opacity:1;transform:scale(1)}}
+
+.flow-welcome-title{font-family:'Space Mono',monospace;font-size:13px;color:var(--white);letter-spacing:0.1em;opacity:0;animation:fadein .8s ease forwards}
+.flow-welcome-tagline{font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.03em;margin-bottom:4px;opacity:0;animation:fadein 1.2s ease forwards}
+.start-btn{font-family:'Space Mono',monospace;font-size:12px;color:var(--data);letter-spacing:0.1em;border:1px solid var(--data);padding:12px 28px;transition:all .2s}
+.start-btn:hover{background:rgba(79,195,247,0.1)}
+.start-note{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);max-width:340px;text-align:center;line-height:1.7}
+
+.return-note{text-align:center;font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);margin-top:12px;opacity:0.7}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ COMMISSION CHOICE PAGE ══════════════ -->
+<div class="view active" id="view-commission">
+  <div class="nav">
+    <span class="nav-back" onclick="window.location.href='nasaat_platform.html'">&larr; back to platform</span>
+    <span class="nav-title">DRONE COMMISSION</span>
+    <div class="nav-badges"><span class="status-badge sb-red">VOICE</span><span class="status-badge sb-red">BCI</span><span class="status-badge sb-green">TEXT</span></div>
+  </div>
+  <div class="commission-wrap">
+    <div class="commission-heading">Commission a drone</div>
+    <div class="commission-sub">Every drone in the network shares the same underlying transit mechanism. What varies is everything built around it — and what it carries.</div>
+
+    <div class="path-choice">
+      <div class="path-card" onclick="showView('gallery')">
+        <div class="path-card-label">Option one</div>
+        <div class="path-card-title">Browse existing designs</div>
+        <div class="path-card-desc">Drones already deployed by the network — system-assigned and independently designed.</div>
+      </div>
+      <div class="path-card" onclick="showView('design')">
+        <div class="path-card-label">Option two</div>
+        <div class="path-card-title">Design your own</div>
+        <div class="path-card-desc">Work with the design process directly.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ GALLERY VIEW ══════════════ -->
+<div class="view" id="view-gallery">
+  <div class="nav">
+    <span class="nav-back" onclick="showView('commission')">&larr; back to commission</span>
+    <span class="nav-title">EXISTING DESIGNS</span>
+    <div class="nav-badges"><span class="status-badge sb-red">VOICE</span><span class="status-badge sb-red">BCI</span><span class="status-badge sb-green">TEXT</span></div>
+  </div>
+  <div class="commission-wrap">
+    <div class="commission-heading" style="font-size:18px;margin-bottom:24px">Deployed drone designs</div>
+
+    <div class="gallery-grid">
+      <div class="drone-card">
+        <div class="drone-visual">
+          <svg viewBox="0 0 200 200"><ellipse cx="100" cy="100" rx="70" ry="55" fill="#0a0a0a" stroke="#2a3f55" stroke-width="1.5"/><circle cx="70" cy="90" r="4" fill="#4FC3F7" opacity="0.6"/><circle cx="130" cy="105" r="3" fill="#4FC3F7" opacity="0.4"/><circle cx="95" cy="130" r="3.5" fill="#4FC3F7" opacity="0.5"/></svg>
+          <div class="drone-placeholder-tag">placeholder — replace with report 001 image</div>
+        </div>
+        <div class="drone-info">
+          <div class="drone-designation">TYPE 4HDUWE-89229</div>
+          <div class="drone-origin">System-assigned default configuration. No requesting designation on record — issued automatically to an anonymous request. Deployed for NT-3184v1.</div>
+        </div>
+      </div>
+
+      <div class="drone-card">
+        <div class="drone-visual">
+          <svg viewBox="0 0 200 200"><ellipse cx="100" cy="100" rx="65" ry="60" fill="#0a0a0a" stroke="#2a3f55" stroke-width="1.5"/><rect x="85" y="70" width="6" height="6" fill="#FF6B35" opacity="0.5" transform="rotate(45 88 73)"/><circle cx="115" cy="120" r="3" fill="#FF6B35" opacity="0.5"/><circle cx="80" cy="115" r="3" fill="#FF6B35" opacity="0.4"/></svg>
+          <div class="drone-placeholder-tag">placeholder — replace with report 002 image</div>
+        </div>
+        <div class="drone-info">
+          <div class="drone-designation">DARK MATTERS GROUP — CUSTOM</div>
+          <div class="drone-origin">Independently designed and submitted by a named research group. Deployed for DM-0791v1.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:36px;padding-top:24px;border-top:1px solid var(--border)">
+      <span class="commission-link" onclick="showView('design')">or design your own &rarr;</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ DESIGN YOUR OWN — THE FLOW ══════════════ -->
+<div class="view" id="view-design">
+  <div class="nav">
+    <span class="nav-back" onclick="showView('commission')">&larr; back to commission</span>
+    <span class="nav-title">DESIGN SESSION</span>
+    <div class="nav-badges"><span class="status-badge sb-red">VOICE</span><span class="status-badge sb-red">BCI</span><span class="status-badge sb-green">TEXT</span></div>
+  </div>
+  <div class="commission-wrap">
+    <div class="commission-heading" style="font-size:18px;margin-bottom:6px">Design your own</div>
+    <div class="commission-sub" style="margin-bottom:24px">Every deployed drone began somewhere. This is where some of them began.</div>
+
+    <div class="flow-stage" id="flow-stage">
+      <div class="flow-header">
+        <span><span class="flow-live-dot" id="flow-live-dot"></span>DESIGN SESSION</span>
+        <span id="flow-session-id">SESSION &middot; INACTIVE</span>
+      </div>
+      <div class="flow-corner tl"></div>
+      <div class="flow-corner tr"></div>
+      <div class="flow-corner bl"></div>
+      <div class="flow-corner br"></div>
+
+      <div class="flow-start-overlay" id="flow-start-overlay">
+        <div class="flow-logo-mark">
+          <div class="flow-logo-ring r1"></div>
+          <div class="flow-logo-ring r2"></div>
+          <div class="flow-logo-dot"></div>
+        </div>
+        <div class="flow-welcome-title">WELCOME TO NASAAT DESIGN</div>
+        <div class="flow-welcome-tagline">The further we reach, the closer we become.</div>
+        <button class="start-btn" onclick="startDesignFlow()">start design session</button>
+      </div>
+
+      <div class="flow-log" id="flow-log"></div>
+
+      <div class="flow-question" id="flow-textinput">
+        <div class="flow-question-text">Describe the mission.</div>
+        <div class="flow-input-row">
+          <input type="text" class="flow-text-field" id="flow-text-field" placeholder="type here..." onkeydown="if(event.key==='Enter')submitMission();">
+          <button class="q-opt" onclick="submitMission()">submit</button>
+        </div>
+      </div>
+
+      <div class="flow-response" id="flow-response"></div>
+
+      <div class="flow-wireframe" id="flow-wireframe">
+        <svg viewBox="0 0 200 200">
+          <ellipse id="wf-hull" cx="100" cy="100" rx="70" ry="55" fill="none" stroke="#4FC3F7" stroke-width="1.5" stroke-dasharray="4 3" opacity="0"/>
+          <circle id="wf-dot1" cx="75" cy="90" r="4" fill="#4FC3F7" opacity="0"/>
+          <circle id="wf-dot2" cx="125" cy="100" r="4" fill="#4FC3F7" opacity="0"/>
+          <circle id="wf-dot3" cx="100" cy="130" r="4" fill="#4FC3F7" opacity="0"/>
+        </svg>
+      </div>
+
+      <div class="flow-drone-flash" id="flash-1">
+        <svg viewBox="0 0 200 200"><ellipse cx="100" cy="100" rx="70" ry="55" fill="#0a0a0a" stroke="#4FC3F7" stroke-width="2"/><circle cx="70" cy="90" r="4" fill="#4FC3F7"/><circle cx="130" cy="105" r="3" fill="#4FC3F7"/></svg>
+        <div class="flow-drone-flash-tag">TYPE 4HDUWE-89229 — recovered fragment</div>
+      </div>
+      <div class="flow-drone-flash" id="flash-2">
+        <svg viewBox="0 0 200 200"><ellipse cx="100" cy="100" rx="65" ry="60" fill="#0a0a0a" stroke="#FF6B35" stroke-width="2"/><circle cx="115" cy="120" r="3" fill="#FF6B35"/><circle cx="80" cy="115" r="3" fill="#FF6B35"/></svg>
+        <div class="flow-drone-flash-tag">DARK MATTERS GROUP — recovered fragment</div>
+      </div>
+
+      <div class="flow-glitch-text" id="flow-glitch-text"></div>
+
+      <canvas class="flow-static" id="flow-static"></canvas>
+
+      <div class="crash-screen" id="crash-screen">
+        <div class="crash-face">:(</div>
+        <div class="crash-line">a process required for your design session<br>encountered a problem and could not continue</div>
+        <div class="crash-trace">trace: recon/0x4E-KXR &middot; fragment set incomplete</div>
+      </div>
+
+      <div class="fail-screen" id="fail-screen">
+        <div class="fail-title">RECONSTRUCTION FAILURE</div>
+        <div class="fail-sub">insufficient data</div>
+      </div>
+
+      <div class="fail-screen" id="subscribe-screen">
+        <div class="fail-title" style="color:var(--data)">REQUEST NOTIFICATION</div>
+        <div class="fail-sub">receive notice if reconstruction completes</div>
+      </div>
+
+      <div class="fail-screen" id="countdown-screen">
+        <div class="countdown-num" id="countdown-num">5</div>
+        <div class="fail-sub">returning to commission</div>
+      </div>
+
+      <div class="fail-screen" id="reboot-screen">
+        <div class="fail-title">REBOOT</div>
+      </div>
+
+      <div class="flow-telemetry" id="flow-telemetry">
+        <div class="flow-tel-item"><span>ENGINE FIT</span><span id="tel-engine">&mdash;</span></div>
+        <div class="flow-tel-item"><span>CONSTRAINT CHECK</span><span id="tel-constraint">&mdash;</span></div>
+        <div class="flow-tel-item"><span>FRAGMENT MATCH</span><span id="tel-fragment">&mdash;</span></div>
+        <div class="flow-tel-item"><span>SYNTHESIS</span><span id="tel-synthesis">&mdash;</span></div>
+      </div>
+    </div>
+    </div>
+    <div class="return-note" id="return-note" style="visibility:hidden">returning to commission page...</div>
+  </div>
+</div>
+
+<script>
+function showView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  window.scrollTo({top:0});
+  if(id==='design') resetDesignFlow();
+}
+
+function resetDesignFlow(){
+  document.getElementById('flow-start-overlay').style.display='flex';
+  document.getElementById('flow-log').innerHTML='';
+  document.getElementById('flow-textinput').classList.remove('shown');
+  document.getElementById('flow-text-field').value='';
+  document.getElementById('flow-text-field').disabled=false;
+  const submitBtn = document.querySelector('#flow-textinput .q-opt');
+  if(submitBtn) submitBtn.disabled=false;
+  document.getElementById('flow-response').classList.remove('shown');
+  document.getElementById('flow-response').textContent='';
+  ['wf-hull','wf-dot1','wf-dot2','wf-dot3'].forEach(id=>{document.getElementById(id).style.opacity='0';});
+  document.getElementById('flash-1').classList.remove('shown');
+  document.getElementById('flash-2').classList.remove('shown');
+  document.getElementById('flow-glitch-text').style.opacity='0';
+  document.getElementById('flow-glitch-text').textContent='';
+  document.getElementById('crash-screen').style.display='none';
+  document.getElementById('fail-screen').style.display='none';
+  document.getElementById('subscribe-screen').style.display='none';
+  document.getElementById('countdown-screen').style.display='none';
+  document.getElementById('reboot-screen').style.display='none';
+  document.getElementById('return-note').style.visibility='hidden';
+  document.getElementById('flow-static').style.opacity='0';
+  document.getElementById('flow-live-dot').classList.remove('active');
+  document.getElementById('flow-session-id').textContent='SESSION \u00b7 INACTIVE';
+  ['tel-engine','tel-constraint','tel-fragment','tel-synthesis'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.textContent='\u2014';
+    el.className='';
+  });
+}
+
+const flowStages = [
+  {text:'establishing design session...'},
+  {text:'loading constraint parameters...', ok:'ready'},
+  {text:'engine fit calculator...', ok:'ready'},
+];
+
+function startDesignFlow(){
+  document.getElementById('flow-start-overlay').style.display='none';
+  document.getElementById('flow-live-dot').classList.add('active');
+  document.getElementById('flow-session-id').textContent='SESSION \u00b7 0x'+Math.floor(Math.random()*0xFFFF).toString(16).toUpperCase().padStart(4,'0');
+  const logEl = document.getElementById('flow-log');
+  let i=0;
+  function nextLine(){
+    if(i>=flowStages.length){
+      setTimeout(showTextInput, 500);
+      return;
+    }
+    const item=flowStages[i];
+    const div=document.createElement('div');
+    div.className='flow-log-line';
+    div.innerHTML=item.text+(item.ok?` <span class="ok">${item.ok}</span>`:'');
+    logEl.appendChild(div);
+    i++;
+    setTimeout(nextLine, 550);
+  }
+  nextLine();
+}
+
+function showTextInput(){
+  document.getElementById('flow-textinput').classList.add('shown');
+}
+
+// Words the process recognizes as mission-relevant. A match doesn't mean success —
+// even a recognized query starts to glitch, since the reconstruction is already
+// straining before the visitor ever presses submit.
+const missionKeywords = ['survey','atmosphere','atmospheric','sample','sampling','surface','signal','monitor','monitoring','transit','orbit','orbital','explore','exploration','map','mapping','land','landing','weather','storm','cloud','dust','ice','water','life','search','listen','radio','dark','matter','gas','giant','moon','star','comet','deep','space'];
+
+const matchedTemplates = [
+  m => `${m} parameters log\u200bged... reconstructing rele\u2588\u2588nt configuration...`,
+  m => `cross-referencing ${m}... pattern fr4gment recovered... incomplete`,
+  m => `${m} noted. querying prior missions... resu//lts partial`,
+  m => `${m}: partial match. archive fragment corrupted beyond this point`
+];
+const unmatchedTemplates = [
+  'no direct match... recovered fragment: "conditions unfav0r##le for stan#ard approach"... continuing',
+  'unresolved query... archived note: "cre_ / desc3nt sequence logged"... proceeding',
+  'querying mission archive... fragment: "instrument respo??e nominal until..."... no correlation',
+  'no correlation found... residual fragment: "///signal lost near term1nus"... continuing anyway'
+];
+
+function submitMission(){
+  const field = document.getElementById('flow-text-field');
+  const val = field.value.trim().toLowerCase();
+  const btn = document.querySelector('#flow-textinput .q-opt');
+  if(btn) btn.disabled=true;
+  field.disabled=true;
+
+  const logEl = document.getElementById('flow-log');
+  const div1=document.createElement('div');
+  div1.className='flow-log-line';
+  div1.textContent='mission: '+(field.value.trim()||'(no input)');
+  logEl.appendChild(div1);
+
+  const matched = missionKeywords.find(k => val.includes(k));
+  const responseEl = document.getElementById('flow-response');
+  responseEl.textContent = matched ? matchedTemplates[Math.floor(Math.random()*matchedTemplates.length)](matched) : unmatchedTemplates[Math.floor(Math.random()*unmatchedTemplates.length)];
+  responseEl.classList.add('shown');
+
+  setTimeout(()=>{
+    document.getElementById('flow-textinput').classList.remove('shown');
+    setTimeout(()=>{
+      responseEl.classList.remove('shown');
+      setTimeout(revealWireframe, 300);
+    }, 1600);
+  }, 1000);
+}
+
+function revealWireframe(){
+  const logEl = document.getElementById('flow-log');
+  const div=document.createElement('div');
+  div.className='flow-log-line';
+  div.textContent='provisional configuration forming...';
+  logEl.appendChild(div);
+
+  document.getElementById('wf-hull').style.opacity='0.8';
+  setTimeout(()=>{ document.getElementById('wf-dot1').style.opacity='1'; }, 500);
+  setTimeout(()=>{ document.getElementById('wf-dot2').style.opacity='1'; }, 1000);
+  setTimeout(()=>{ document.getElementById('wf-dot3').style.opacity='1'; }, 1500);
+
+  setTimeout(()=>{
+    ['wf-hull','wf-dot1','wf-dot2','wf-dot3'].forEach(id=>{document.getElementById(id).style.opacity='0';});
+    setTimeout(flashDrone1, 500);
+  }, 2600);
+}
+
+function flashDrone1(){
+  const f1=document.getElementById('flash-1');
+  f1.classList.add('shown');
+  document.getElementById('tel-fragment').textContent='1 of 2';
+  setTimeout(()=>{
+    f1.classList.remove('shown');
+    setTimeout(flashDrone2, 300);
+  }, 900);
+}
+
+function flashDrone2(){
+  const f2=document.getElementById('flash-2');
+  f2.classList.add('shown');
+  document.getElementById('tel-fragment').textContent='2 of 2';
+  setTimeout(()=>{
+    f2.classList.remove('shown');
+    setTimeout(beginSynthesisStrain, 300);
+  }, 900);
+}
+
+function beginSynthesisStrain(){
+  const logEl = document.getElementById('flow-log');
+  const div=document.createElement('div');
+  div.className='flow-log-line';
+  div.innerHTML='synthesizing new configuration...';
+  logEl.appendChild(div);
+  document.getElementById('tel-synthesis').textContent='in progress';
+
+  const glitch = document.getElementById('flow-glitch-text');
+  glitch.style.opacity='1';
+  const glitchWords = ['recomb//ining fra_ments','patt3rn maTch faIl','ins//uffici3nt d4ta','////////////'];
+  let g=0;
+  const glitchInt = setInterval(()=>{
+    glitch.textContent = glitchWords[g % glitchWords.length];
+    g++;
+    if(g>7){
+      clearInterval(glitchInt);
+      document.getElementById('tel-synthesis').textContent='failed';
+      document.getElementById('tel-synthesis').className='tel-fail';
+      triggerStaticAndCrash();
+    }
+  }, 160);
+}
+
+function triggerStaticAndCrash(){
+  const sc = document.getElementById('flow-static');
+  const ctx = sc.getContext('2d');
+  const stage = document.getElementById('flow-stage');
+  sc.width = stage.offsetWidth; sc.height = stage.offsetHeight;
+  sc.style.opacity='1';
+  let frames=0;
+  const staticInt = setInterval(()=>{
+    const id = ctx.createImageData(sc.width, sc.height);
+    const d = id.data;
+    for(let p=0;p<d.length;p+=4){
+      const v = Math.random()>0.5 ? Math.floor(Math.random()*80+20) : 0;
+      d[p]=d[p+1]=d[p+2]=v; d[p+3]=v>0?255:0;
+    }
+    ctx.putImageData(id,0,0);
+    frames++;
+    if(frames>6){
+      clearInterval(staticInt);
+      sc.style.opacity='0';
+      showCrashScreen();
+    }
+  }, 55);
+}
+
+function showCrashScreen(){
+  document.getElementById('flow-live-dot').classList.remove('active');
+  document.getElementById('crash-screen').style.display='flex';
+  setTimeout(()=>{
+    document.getElementById('crash-screen').style.display='none';
+    showFailScreen();
+  }, 2600);
+}
+
+function showFailScreen(){
+  document.getElementById('fail-screen').style.display='flex';
+  document.getElementById('flow-session-id').textContent='SESSION \u00b7 TERMINATED';
+  setTimeout(showSubscribeScreen, 2600);
+}
+
+function showSubscribeScreen(){
+  document.getElementById('fail-screen').style.display='none';
+  document.getElementById('subscribe-screen').style.display='flex';
+  setTimeout(startCountdown, 2400);
+}
+
+function startCountdown(){
+  document.getElementById('subscribe-screen').style.display='none';
+  document.getElementById('countdown-screen').style.display='flex';
+  let n=5;
+  document.getElementById('countdown-num').textContent=n;
+  const cdInt=setInterval(()=>{
+    n--;
+    if(n<=0){
+      clearInterval(cdInt);
+      showReboot();
+      return;
+    }
+    document.getElementById('countdown-num').textContent=n;
+  },800);
+}
+
+function showReboot(){
+  document.getElementById('countdown-screen').style.display='none';
+  document.getElementById('reboot-screen').style.display='flex';
+  setTimeout(()=>{
+    showView('commission');
+  }, 1400);
+}
+</script>
+</body>
+</html>
