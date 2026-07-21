@@ -245,7 +245,6 @@ canvas#dash-starfield{position:fixed;inset:0;width:100%;height:100%;pointer-even
         <div class="mission-status" style="color:var(--dash-cyan);border-color:var(--dash-cyan)">active</div>
       </div>
       <div class="mission-card-sub">drone: TYPE 4HDUWE-89229 &middot; system-default configuration</div>
-      <div style="margin-top:10px"><a href="#" onclick="openReportWindow('nasaat_report_001_v2_rendered.html');return false;" class="dash-inline-link">view field report &rarr;</a></div>
     </div>
     <div class="mission-card">
       <div class="mission-card-top">
@@ -253,7 +252,6 @@ canvas#dash-starfield{position:fixed;inset:0;width:100%;height:100%;pointer-even
         <div class="mission-status" style="color:var(--dash-cyan);border-color:var(--dash-cyan)">active</div>
       </div>
       <div class="mission-card-sub">drone: DM-0791 carrier &middot; independently submitted design</div>
-      <div style="margin-top:10px"><a href="#" onclick="openReportWindow('nasaat_report_002_final.html');return false;" class="dash-inline-link">view field report &rarr;</a></div>
     </div>
 
     <div class="dash-subheading" style="margin-top:30px">My Missions</div>
@@ -284,6 +282,7 @@ canvas#dash-starfield{position:fixed;inset:0;width:100%;height:100%;pointer-even
       <div class="mission-card-sub">field transmission &middot; dark matter precipitation, composition</div>
       <div style="margin-top:10px"><span class="dash-inline-link" onclick="openReportWindow('nasaat_report_002_final.html')" style="cursor:pointer">open report &rarr;</span></div>
     </div>
+    <div id="pending-reports-section"></div>
   </div>
 
   <div class="dash-panel" id="dash-messages">
@@ -550,6 +549,18 @@ function confirmReportRequest(){
   status.style.borderColor = 'var(--dash-cyan)';
   btn.disabled = true;
   btn.textContent = 'Confirmed';
+
+  const label = reportRequestNames[pendingReportRequest] || pendingReportRequest;
+  const section = document.getElementById('pending-reports-section');
+  section.innerHTML = `
+    <div class="dash-subheading" style="margin-top:26px">Pending</div>
+    <div class="mission-card">
+      <div class="mission-card-top">
+        <div class="mission-card-title">${label}</div>
+        <div class="mission-status">pending</div>
+      </div>
+      <div class="mission-card-sub">requested analysis not yet available</div>
+    </div>`;
 }
 
 function enterDashboard(){

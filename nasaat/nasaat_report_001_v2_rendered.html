@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nasaat — NT-3184v1/M2-9KXR.1</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--space:#050810;--panel:#0B1628;--panel2:#0D1E35;
+--border:#1A3A5C;--border2:#0F2540;
+--data:#4FC3F7;--body:#C8DCF0;--symbol:#7FDBFF;
+--flag:#FF6B35;--dim:#3A5570;--white:#E8F4FD;--green:#4ADE80;
+}
+html,body{height:100%;background:var(--space);color:var(--body);font-family:'IBM Plex Sans',sans-serif;overflow:hidden}
+body{display:flex;flex-direction:column}
+button{cursor:pointer;font-family:'Space Mono',monospace;border:none;background:none}
+
+/* HEADER */
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;padding:10px 20px;border-bottom:1px solid var(--border);background:var(--panel);gap:8px;flex-shrink:0}
+.logo{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.12em;color:var(--symbol)}
+.report-id{font-family:'Space Mono',monospace;font-size:10px;color:var(--dim)}
+.meta-wrap{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.meta-item{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim)}
+.meta-item span{color:var(--data)}
+.live-badge{display:flex;align-items:center;gap:5px;font-family:'Space Mono',monospace;font-size:9px;color:var(--green);border:1px solid rgba(74,222,128,0.3);padding:3px 8px}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:blink 1.4s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* LAYOUT */
+.main{display:grid;grid-template-columns:1fr 300px 360px;flex:1;overflow:hidden;min-height:0}
+
+/* ── LEFT: VIEWER WINDOW ── */
+.viewer{display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden;min-height:0}
+
+.view-tabs{display:flex;background:var(--panel);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto}
+.view-tabs::-webkit-scrollbar{height:0}
+.vt-btn{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.08em;color:var(--dim);padding:7px 11px;border-right:1px solid var(--border);transition:all .15s;text-transform:uppercase;white-space:nowrap;flex-shrink:0}
+.vt-btn:hover{color:var(--data);background:rgba(79,195,247,0.05)}
+.vt-btn.active{color:var(--data);background:rgba(79,195,247,0.08);border-bottom:2px solid var(--data)}
+.viewer-count{font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);padding:7px 10px;border-left:1px solid var(--border);margin-left:auto;white-space:nowrap;flex-shrink:0}
+.viewer-count span{color:var(--green)}
+
+/* the view area */
+.view-area{flex:1;position:relative;overflow:hidden;min-height:0}
+canvas#tracker{position:absolute;inset:0;width:100%;height:100%}
+canvas#cam-canvas{position:absolute;inset:0;width:100%;height:100%;display:none}
+canvas#cam-canvas-b{position:absolute;inset:0;width:100%;height:100%;display:none;pointer-events:none}
+.inst-tag{position:absolute;top:10px;left:10px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.08em;padding:3px 8px;background:rgba(5,8,16,0.75);border:1px solid currentColor;z-index:6;display:none}
+.inst-tag.st-offline{color:var(--warn,#C85B4A)}
+.inst-tag.st-booting{color:#E8954A;animation:instblink 1s infinite}
+.inst-tag.st-online{color:var(--green,#4ADE80)}
+@keyframes instblink{0%,100%{opacity:1}50%{opacity:.4}}
+canvas#radio-spectrogram{position:absolute;inset:0;width:100%;height:100%;display:none;background:#000}
+.radio-log{position:absolute;bottom:0;left:0;right:0;max-height:38%;overflow:hidden;display:none;background:linear-gradient(transparent,rgba(5,8,16,0.9) 30%);padding:10px 12px 8px;z-index:5}
+.radio-log-line{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);line-height:1.8;opacity:0;animation:radiologin .4s forwards}
+.radio-log-line.signal{color:var(--data)}
+@keyframes radiologin{to{opacity:1}}
+canvas#static-burst{position:absolute;inset:0;width:100%;height:100%;opacity:0;pointer-events:none;z-index:5}
+.rendering-view{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:#000}
+.rendering-view img{max-width:100%;max-height:100%;object-fit:contain}
+.rendering-missing,.rendering-unavailable{display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:20px}
+.rendering-missing-label{font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.08em}
+.rendering-missing-sub{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);opacity:0.7;max-width:260px;line-height:1.6}
+.rendering-tag{position:absolute;bottom:10px;left:10px;font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);background:rgba(5,8,16,0.75);padding:3px 8px;border:1px solid var(--border);letter-spacing:0.08em}
+
+/* tracker overlays */
+.fs-btn{position:absolute;top:10px;right:10px;width:28px;height:28px;background:rgba(5,8,16,0.7);border:1px solid var(--border);color:var(--dim);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;z-index:7}
+.fs-btn:hover{color:var(--data);border-color:var(--data)}
+.view-area:fullscreen, .view-area:-webkit-full-screen{width:100vw;height:100vh}
+.tracker-tag{position:absolute;top:10px;left:10px;font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);background:rgba(5,8,16,0.75);padding:3px 8px;border:1px solid var(--border);letter-spacing:0.1em;z-index:4}
+.drone-tip{position:absolute;background:rgba(5,8,16,0.92);border:1px solid var(--data);padding:6px 10px;font-family:'Space Mono',monospace;font-size:8px;color:var(--data);pointer-events:none;display:none;white-space:nowrap;z-index:10;line-height:1.6}
+
+/* camera overlays */
+.cam-tag{position:absolute;top:10px;left:10px;font-family:'Space Mono',monospace;font-size:9px;color:rgba(200,220,240,0.55);background:rgba(5,8,16,0.6);padding:3px 8px;border:1px solid rgba(26,58,92,0.5);letter-spacing:0.1em;z-index:4;display:none}
+.cam-status-center{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;z-index:4}
+.cam-status-name{font-family:'Space Mono',monospace;font-size:11px;color:rgba(200,220,240,0.45);letter-spacing:0.1em}
+.cam-status-state{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.16em;text-transform:uppercase}
+.st-offline{color:rgba(255,107,53,0.55)}
+.st-connecting{color:rgba(79,195,247,0.45);animation:flicker 2.2s infinite}
+@keyframes flicker{0%,100%{opacity:1}40%{opacity:.3}50%{opacity:.8}60%{opacity:.25}70%{opacity:.7}}
+
+/* spectrum slider overlay */
+.spec-overlay{position:absolute;top:10px;right:10px;display:none;z-index:4;pointer-events:none}
+.spec-offline-tag{font-family:'Space Mono',monospace;font-size:8px;color:rgba(200,220,240,0.5);background:rgba(5,8,16,0.75);padding:3px 8px;border:1px solid rgba(26,58,92,0.5);letter-spacing:0.1em}
+.spec-slider-overlay{position:absolute;bottom:0;left:0;right:0;display:none;flex-direction:column;align-items:center;padding:14px 20px 18px;z-index:4;background:linear-gradient(transparent,rgba(5,8,16,0.85));pointer-events:auto}
+.spec-label-bar{display:flex;justify-content:space-between;width:82%;margin-bottom:7px;font-family:'Space Mono',monospace;font-size:7px;color:var(--dim);letter-spacing:0.08em}
+.spec-slider-wrap{width:82%}
+.spec-name{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:0.1em;margin-bottom:10px;text-align:center}
+input.spec-range{width:100%;appearance:none;height:3px;border-radius:2px;outline:none;cursor:pointer;background:linear-gradient(90deg,#8B0000,#FF4500,#FF8C00,#FFD700,#00FF00,#00BFFF,#0000FF,#8B00FF)}
+input.spec-range::-webkit-slider-thumb{appearance:none;width:14px;height:14px;border-radius:50%;background:var(--white);border:2px solid var(--dim);cursor:not-allowed;opacity:0.5}
+
+/* instruments */
+.instruments{background:rgba(5,8,16,0.92);border-top:1px solid var(--border);padding:11px 14px;display:grid;grid-template-columns:1fr 1fr;gap:9px;flex-shrink:0}
+.inst{display:flex;flex-direction:column;gap:3px}
+.inst-label{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:0.12em;color:var(--dim);text-transform:uppercase;display:flex;justify-content:space-between}
+.inst-val{font-family:'Space Mono',monospace;font-size:9px;color:var(--data)}
+.inst-flag{color:var(--flag)}
+.bar-track{height:3px;background:rgba(26,58,92,0.5);border-radius:2px;overflow:hidden}
+.bar-fill{height:100%;border-radius:2px;transition:width .4s ease}
+.bar-grav{background:var(--data)}.bar-therm{background:#81C784}.bar-chem{background:var(--flag)}
+.waveform{height:20px;overflow:hidden}
+
+/* ── MIDDLE: TRANSMISSION + REQUESTS ── */
+.mid-panel{border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.panel-tabs{display:flex;border-bottom:1px solid var(--border);background:var(--panel);flex-shrink:0}
+.tab-btn{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.08em;color:var(--dim);padding:9px 0;transition:all .2s;text-transform:uppercase;flex:1;text-align:center;border-right:1px solid var(--border)}
+.tab-btn:last-child{border-right:none}
+.tab-btn:hover{color:var(--data)}
+.tab-btn.active{color:var(--data);background:rgba(79,195,247,0.06);border-bottom:2px solid var(--data)}
+.panel-content{flex:1;overflow-y:auto;display:none;min-height:0}
+.panel-content.active{display:flex;flex-direction:column}
+.panel-content::-webkit-scrollbar{width:2px}
+.panel-content::-webkit-scrollbar-thumb{background:var(--border)}
+
+.tx-header{padding:12px 14px 10px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--panel);z-index:5;flex-shrink:0}
+.tx-title{font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:2px}
+.tx-id{font-family:'Space Mono',monospace;font-size:10px;color:var(--symbol)}
+.tx-lines{padding:6px 0}
+.tx-line{padding:4px 14px;opacity:0;animation:fadein .5s forwards}
+.tx-line:hover{background:rgba(79,195,247,0.04)}
+.tx-sym{font-family:'Space Mono',monospace;font-size:10px;color:var(--symbol);line-height:1.5;letter-spacing:0.02em}
+.tx-gl{font-family:'Space Mono',monospace;font-size:7px;color:var(--dim);line-height:1.5;margin-top:1px}
+.tx-div{height:1px;background:var(--border);margin:5px 14px}
+@keyframes fadein{to{opacity:1}}
+
+.req-panel{padding:14px;display:flex;flex-direction:column;gap:11px;flex:1;overflow-y:auto}
+.req-title{font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:2px}
+.req-sub{font-size:11px;color:var(--body);line-height:1.5;font-weight:300}
+.req-field{display:flex;flex-direction:column;gap:4px}
+.req-field label{font-family:'Space Mono',monospace;font-size:7px;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase}
+.req-field select,.req-field input{background:var(--panel2);border:1px solid var(--border);color:var(--body);font-family:'Space Mono',monospace;font-size:9px;padding:7px 9px;width:100%;outline:none;appearance:none}
+.req-field select:focus,.req-field input:focus{border-color:var(--data)}
+.req-field input::placeholder{color:var(--dim)}
+.req-submit{background:rgba(79,195,247,0.08);border:1px solid var(--data);color:var(--data);font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;padding:9px;width:100%;text-transform:uppercase;transition:all .2s}
+.req-submit:hover{background:rgba(79,195,247,0.15)}
+.req-confirm{background:rgba(74,222,128,0.06);border:1px solid var(--green);color:var(--green);font-family:'Space Mono',monospace;font-size:9px;padding:9px 11px;line-height:1.6;display:none}
+
+.verify-overlay{display:none;position:fixed;inset:0;background:rgba(2,4,8,0.85);z-index:1000;align-items:center;justify-content:center;padding:20px}
+.verify-overlay.shown{display:flex}
+.verify-box{max-width:380px;width:100%;background:var(--panel);border:1px solid var(--border);padding:28px 24px;text-align:center}
+.verify-box-title{font-family:'Space Mono',monospace;font-size:11px;color:var(--data);letter-spacing:0.06em;margin-bottom:10px}
+.verify-box-sub{font-size:12px;color:var(--dim);line-height:1.7;margin-bottom:22px}
+.verify-box-btn{width:100%;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.05em;padding:12px;margin-bottom:8px;transition:all .2s}
+.verify-box-btn.primary{background:var(--data);color:#04141f;font-weight:700;border:none}
+.verify-box-btn.primary:hover{opacity:0.9}
+.verify-box-btn.ghost{background:none;border:1px solid var(--border);color:var(--data)}
+.verify-box-btn.ghost:hover{border-color:var(--data)}
+.req-recent{border-top:1px solid var(--border);padding-top:10px}
+.req-recent-title{font-family:'Space Mono',monospace;font-size:7px;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:7px}
+.req-item{padding:5px 0;border-bottom:1px solid var(--border2);display:flex;justify-content:space-between;gap:8px}
+.req-item:last-child{border-bottom:none}
+.req-item-text{font-family:'Space Mono',monospace;font-size:8px;color:var(--body);line-height:1.4}
+.req-item-time{font-family:'Space Mono',monospace;font-size:7px;color:var(--dim);white-space:nowrap;margin-top:1px}
+
+/* ── RIGHT: REPORT ── */
+.report-col{display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.report-header{padding:12px 16px 10px;border-bottom:1px solid var(--border);background:var(--panel);flex-shrink:0}
+.report-header-title{font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:2px}
+.report-header-id{font-family:'Space Mono',monospace;font-size:10px;color:var(--white)}
+.report-body{flex:1;overflow-y:auto;padding:16px}
+.report-body::-webkit-scrollbar{width:2px}
+.report-body::-webkit-scrollbar-thumb{background:var(--border)}
+.report-body h2{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.12em;color:var(--dim);text-transform:uppercase;margin:15px 0 7px;padding-bottom:5px;border-bottom:1px solid var(--border)}
+.report-body h2:first-child{margin-top:0}
+.report-body p{font-size:12px;line-height:1.85;color:var(--body);margin-bottom:9px;font-weight:300}
+.lead{font-size:13px!important;color:var(--white)!important;font-weight:400!important}
+.flag-block{background:rgba(255,107,53,0.06);border-left:2px solid var(--flag);padding:7px 11px;margin:8px 0;font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);line-height:1.6}
+.flag-block strong{color:var(--flag);display:block;margin-bottom:2px}
+
+/* MOBILE */
+.tab-btn.mobile-only{display:none}
+@media(max-width:960px){
+  html,body{height:auto;overflow:auto}
+  .main{grid-template-columns:1fr;overflow:visible}
+  .viewer{height:500px;border-right:none;border-bottom:1px solid var(--border)}
+  .mid-panel{height:520px;border-right:none;border-bottom:1px solid var(--border)}
+  .mid-panel.collapsed{height:auto}
+  .report-col{overflow:visible;border-right:none;display:none}
+  .report-col.mobile-active{display:flex}
+  .report-body{overflow:visible;flex:none}
+  .tab-btn.mobile-only{display:block}
+}
+@media(max-width:520px){
+  .instruments{grid-template-columns:1fr}
+  .vt-btn{padding:6px 8px;font-size:7px}
+  header{padding:8px 12px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center;gap:10px">
+    <a href="nasaat_platform.html" style="font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);text-decoration:none;border:1px solid var(--border);padding:4px 8px;transition:all .2s" onmouseover="this.style.color='var(--data)';this.style.borderColor='var(--data)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border)'">&larr; Registry</a>
+    <div class="logo">Nasaat</div>
+  </div>
+  <div class="report-id" onclick="openDroneTab()" style="cursor:pointer;border-bottom:1px solid var(--border);display:inline-block">NT-3184v1/M2-9KXR.1</div>
+  <div class="meta-wrap">
+    <div class="live-badge"><div class="live-dot"></div>live</div>
+    <div class="meta-item">Report <span>#001 · first transmission</span></div>
+    <div class="meta-item">Read <span id="reads">14,892</span></div>
+    <div class="meta-item">Shared <span>1,203</span></div>
+    <div class="meta-item">Saved <span>3,417</span></div>
+    <div class="meta-item">Subscribed <span>2,089</span></div>
+    <div class="meta-item">Rating <span>4.8</span></div>
+    <div class="meta-item">More from drone <span>0</span></div>
+  </div>
+</header>
+
+<div class="main">
+
+<!-- LEFT: VIEWER WINDOW -->
+<div class="viewer">
+  <div class="view-tabs">
+    <button class="vt-btn active" onclick="setView('tracker',this)">Tracker</button>
+    <button class="vt-btn" onclick="setView('vis',this)">Visible</button>
+    <button class="vt-btn" onclick="setView('ir',this)">Infrared</button>
+    <button class="vt-btn" onclick="setView('uv',this)">UV</button>
+    <button class="vt-btn" onclick="setView('radio',this)">Radio</button>
+    <button class="vt-btn" onclick="setView('therm',this)">Thermal</button>
+    <button class="vt-btn" onclick="setView('spec',this)">Mod. Spectrum</button>
+    <button class="vt-btn" onclick="setView('rendering',this)">Rendering</button>
+    <div class="viewer-count"><span id="viewers">47</span> watching</div>
+  </div>
+
+  <div class="view-area" id="view-area">
+    <button class="fs-btn" id="fsBtn" onclick="toggleFullscreen()" title="fullscreen">⤢</button>
+    <!-- tracker canvas (default) -->
+    <canvas id="tracker"></canvas>
+    <div class="tracker-tag" id="tracker-tag">ORBITAL TRACKER · NT-3184v1/M2-9KXR.1</div>
+    <div class="drone-tip" id="drone-tip"></div>
+
+    <!-- camera canvas (real procedural rendering) -->
+    <canvas id="cam-canvas"></canvas>
+    <canvas id="cam-canvas-b"></canvas>
+    <div class="inst-tag" id="instTag">OFFLINE</div>
+    <canvas id="radio-spectrogram"></canvas>
+    <div class="radio-log" id="radio-log"></div>
+    <div class="cam-tag" id="cam-tag"></div>
+    <div class="cam-status-center" id="cam-status-center">
+      <div class="cam-status-name" id="cam-status-name"></div>
+      <div class="cam-status-state" id="cam-status-state"></div>
+    </div>
+
+    <!-- spectrum offline notice + slider preview -->
+    <div class="spec-overlay" id="spec-overlay">
+      <div class="spec-offline-tag">MOD. SPECTRUM &middot; <span class="st-offline">OFFLINE</span></div>
+    </div>
+    <div class="spec-slider-overlay" id="spec-slider-overlay">
+      <div class="spec-name" id="spec-name">INFRARED &middot; 750nm</div>
+      <div class="spec-label-bar"><span>Infrared</span><span>Visible</span><span>UV</span><span>X-Ray</span></div>
+      <div class="spec-slider-wrap">
+        <input type="range" class="spec-range" id="spec-range" min="0" max="100" value="35" oninput="updateSpectrum(this.value)">
+      </div>
+    </div>
+
+    <!-- system rendering — manual placeholder until real procedural visual exists for this body -->
+    <div class="rendering-view" id="rendering-view">
+      <img id="rendering-img" src="renderings/nt-3184-rendering.jpg" alt="System rendering" onerror="this.style.display='none';document.getElementById('rendering-missing').style.display='flex';">
+      <div class="rendering-missing" id="rendering-missing">
+        <div class="rendering-missing-label">RENDERING &middot; NOT YET PROVIDED</div>
+        <div class="rendering-missing-sub">No system rendering has been uploaded for this record.</div>
+      </div>
+      <div class="rendering-unavailable" id="rendering-unavailable">
+        <div class="rendering-missing-label">RENDERING &middot; NOT NECESSARY</div>
+        <div class="rendering-missing-sub">Full visual data is available directly \u2014 see camera feeds.</div>
+      </div>
+      <div class="rendering-tag">SYSTEM RENDERING &middot; NOT INSTRUMENT DATA</div>
+    </div>
+
+    <!-- static burst on switch -->
+    <canvas id="static-burst"></canvas>
+  </div>
+
+  <div class="instruments">
+    <div class="inst">
+      <div class="inst-label">Gravimetric <span class="inst-val" id="grav-val">7.41 Jₘ</span></div>
+      <div class="bar-track"><div class="bar-fill bar-grav" id="grav-bar" style="width:74%"></div></div>
+    </div>
+    <div class="inst">
+      <div class="inst-label">Thermal <span class="inst-val" id="therm-val">278K</span></div>
+      <div class="bar-track"><div class="bar-fill bar-therm" id="therm-bar" style="width:58%"></div></div>
+    </div>
+    <div class="inst">
+      <div class="inst-label">D/H ratio <span class="inst-val" id="chem-val">2.31×10⁻⁵ ↑</span></div>
+      <div class="bar-track"><div class="bar-fill bar-chem" id="chem-bar" style="width:68%"></div></div>
+    </div>
+    <div class="inst">
+      <div class="inst-label">SAAAD <span class="inst-val" id="sig-val">idle ○</span></div>
+      <div class="waveform"><canvas id="wave" style="width:100%;height:20px"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- MIDDLE: TRANSMISSION + REQUESTS -->
+<section class="mid-panel">
+  <div class="panel-tabs">
+    <button class="tab-btn active" onclick="setTab('tx',this)">Transmission</button>
+    <button class="tab-btn" onclick="setTab('req',this)">Reports</button>
+    <button class="tab-btn" id="drone-tab-btn" onclick="setTab('drone',this)">Drone</button>
+    <button class="tab-btn mobile-only" onclick="setTab('translation',this)">Translation</button>
+  </div>
+
+  <div class="panel-content active" id="tab-tx">
+    <div class="tx-header">
+      <div class="tx-title">First transmission — report 001</div>
+      <div class="tx-id">⊛ NT-3184v1/M2-9KXR.1 — ◐⊛○</div>
+    </div>
+    <div class="tx-lines">
+      <div class="tx-line" style="animation-delay:.05s"><div class="tx-sym">⊛⌖ ¹¹•²⁴⊕ ∅⊗ ∅• ↔∞</div><div class="tx-gl">(origin: 7.4 Jₘ body — no stellar anchor — no companion — unbound)</div></div>
+      <div class="tx-line" style="animation-delay:.15s"><div class="tx-sym">◐⊛ ←⊿ ⌖△ ∿∇ ⊉○</div><div class="tx-gl">(prior signal: passing craft — anomaly flagged — field inconsistent)</div></div>
+      <div class="tx-line" style="animation-delay:.25s"><div class="tx-sym">│← ◐⊛ ◑⌖ ⊿○ ⟳⏚</div><div class="tx-gl">(this unit: launched after — arrived — lock confirmed — orbit stable)</div></div>
+      <div class="tx-div"></div>
+      <div class="tx-line" style="animation-delay:.35s"><div class="tx-sym">⊿⌀ ¹¹•²⁴⊕ ⊉⊗ ─○◎</div><div class="tx-gl">(mass: 7.4 Jₘ — not stellar — no fusion — confirmed)</div></div>
+      <div class="tx-line" style="animation-delay:.45s"><div class="tx-sym">⊿⁴ ∅─ ∅⊿△ ⌁↓ ◐∞</div><div class="tx-gl">(core: no deuterium burn — heat: below stellar — formation residual)</div></div>
+      <div class="tx-line" style="animation-delay:.55s"><div class="tx-sym">∇⌁ ↓‰ ◎∵ ◐⁰ ○⏚</div><div class="tx-gl">(dissipation: slower than predicted — formation older than model)</div></div>
+      <div class="tx-div"></div>
+      <div class="tx-line" style="animation-delay:.65s"><div class="tx-sym">⊿∿ ⊞◐ ─↔ ⁵³•⁰% ⌁⊂</div><div class="tx-gl">(atmosphere: stratified — H₂ 53% — heat contained)</div></div>
+      <div class="tx-line" style="animation-delay:.75s"><div class="tx-sym">⋈∿ ⊿↑ ∇↓ ─◑ ○⊿</div><div class="tx-gl">(collision absorption: confirmed — gradient wide — modeled)</div></div>
+      <div class="tx-line" style="animation-delay:.85s"><div class="tx-sym">⊿⊙ ≈²⁴³•⁰⊙↑ ⊂◎ ⌁∵</div><div class="tx-gl">(surface: ≥243K — liquid water range — internal heat only)</div></div>
+      <div class="tx-div"></div>
+      <div class="tx-line" style="animation-delay:.95s"><div class="tx-sym">∅⋈ ─△ ∅◐⊕ ⏚⌁</div><div class="tx-gl">(tidal partner: absent — heat budget: self-closing)</div></div>
+      <div class="tx-line" style="animation-delay:1.05s"><div class="tx-sym">⊿⊙ ⊿◎ ≈²⁵³•⁰⊙ →³⁰³•⁰⊙ ○⊂</div><div class="tx-gl">(surface: 253K–303K — liquid water window — confirmed)</div></div>
+      <div class="tx-div"></div>
+      <div class="tx-line" style="animation-delay:1.15s"><div class="tx-sym">⊿◎ ↑⊞ ◎─ ⊉⊿⌀</div><div class="tx-gl">(organic chemistry: above baseline — anomalous distribution)</div></div>
+      <div class="tx-line" style="animation-delay:1.25s"><div class="tx-sym">‰⊿ △│ ◎⋈ ─○ △⊿</div><div class="tx-gl">(amino analogues: trace — chirality: unresolved — isotopes: flagged)</div></div>
+      <div class="tx-line" style="animation-delay:1.35s"><div class="tx-sym">✦○ ⊛◑ ⊿│ △─</div><div class="tx-gl">(dataset: flagged — forwarded — result: pending)</div></div>
+      <div class="tx-div"></div>
+      <div class="tx-line" style="animation-delay:1.45s"><div class="tx-sym">△◎ ⊞← ─○ △◐⊕ △◐∿</div><div class="tx-gl">(formation: unresolved — collapse or ejection)</div></div>
+      <div class="tx-line" style="animation-delay:1.55s"><div class="tx-sym">⊿↑ ←⌖ ◐∞ ─△ ⊉◎</div><div class="tx-gl">(dust: leading face elevated — transit: extended)</div></div>
+      <div class="tx-line" style="animation-delay:1.65s"><div class="tx-sym">✦○ ⊛◑ ⊿│ △─</div><div class="tx-gl">(forwarded — result: pending)</div></div>
+      <div class="tx-div"></div>
+      <div class="tx-line" style="animation-delay:1.75s"><div class="tx-sym">⊿→ ⌖○ ∅⋈ ←◐ ⊿∞</div><div class="tx-gl">(heading: logged — no projected encounter — clear)</div></div>
+      <div class="tx-div"></div>
+      <div class="tx-line" style="animation-delay:1.85s"><div class="tx-sym">◐• ─◑ ○│ •─</div><div class="tx-gl">(carrier: prior — moved on)</div></div>
+      <div class="tx-line" style="animation-delay:1.95s"><div class="tx-sym">│⟳ ⏚○ ◑⊛ ∞─ ⊉⊠</div><div class="tx-gl">(this unit: orbiting — stable — transmitting — no failure)</div></div>
+    </div>
+  </div>
+
+  <div class="panel-content" id="tab-req">
+    <div class="req-panel">
+      <div>
+        <div class="req-title">Report request</div>
+        <p class="req-sub" style="margin-top:4px">Request a compiled summary from the live archive. The dataset updates continuously as the mini-drone transmits.</p>
+      </div>
+      <div class="req-field">
+        <label>Drone / target</label>
+        <select>
+          <option>NT-3184v1/M2-9KXR.1 — rogue planet</option>
+          <option>DM-0791v1 — HD 206893 B moons</option>
+          <option>All active drones</option>
+        </select>
+      </div>
+      <div class="req-field">
+        <label>Data type</label>
+        <select>
+          <option>Latest summary</option>
+          <option>Isotopic analysis update</option>
+          <option>Full dataset delta</option>
+          <option>Trajectory and orbital</option>
+          <option>Atmospheric composition</option>
+          <option>Formation hypothesis update</option>
+        </select>
+      </div>
+      <div class="req-field">
+        <label>Subject range (optional)</label>
+        <input type="text" placeholder="e.g. chirality, isotope ratios, water">
+      </div>
+      <div class="req-field">
+        <label>Format</label>
+        <select>
+          <option>Drone voice (translated)</option>
+          <option>Raw transmission + gloss</option>
+          <option>Data table</option>
+        </select>
+      </div>
+      <button class="req-submit" onclick="submitRequest()">Submit report request</button>
+      <div class="req-confirm" id="req-confirm">✦ Request queued — NT-3184v1<br>Estimated response: next transmission window<br>Subscribe for notification.</div>
+      <div class="req-recent" style="margin-bottom:0;padding-bottom:10px">
+        <div class="req-recent-title">Published reports — NT-3184v1</div>
+        <div class="req-item" style="align-items:center">
+          <div>
+            <div class="req-item-text" style="color:var(--data)">001 · Rogue planet — first transmission</div>
+            <div style="font-family:'Space Mono',monospace;font-size:7px;color:var(--dim);margin-top:2px">Isotopes · Origin · Trajectory · Surface water</div>
+          </div>
+          <div class="req-item-time" style="color:var(--data)">current</div>
+        </div>
+        <div class="req-item" style="opacity:0.35">
+          <div class="req-item-text">002 · pending next transmission</div>
+          <div class="req-item-time">—</div>
+        </div>
+        <div class="req-item" style="opacity:0.2">
+          <div class="req-item-text">003 · pending</div>
+          <div class="req-item-time">—</div>
+        </div>
+      </div>
+      <div class="req-recent">
+        <div class="req-recent-title">Recent requests</div>
+        <div class="req-item"><div class="req-item-text">Isotopic analysis · D/H enhancement significance</div><div class="req-item-time">2h ago</div></div>
+        <div class="req-item"><div class="req-item-text">Formation — ejection vs. collapse</div><div class="req-item-time">5h ago</div></div>
+        <div class="req-item"><div class="req-item-text">Atmospheric composition delta</div><div class="req-item-time">11h ago</div></div>
+        <div class="req-item"><div class="req-item-text">Surface temperature variance · 30-day</div><div class="req-item-time">1d ago</div></div>
+        <div class="req-item"><div class="req-item-text">Trajectory projection · 500-year</div><div class="req-item-time">2d ago</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="panel-content" id="tab-drone">
+    <div class="req-panel">
+
+      <div style="border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:4px">
+        <div class="req-title">Carrier — NT-3184v1</div>
+        <p class="req-sub" style="margin-top:4px">Independent carrier drone. Personally owned. No institutional affiliation.</p>
+      </div>
+
+      <div class="req-field">
+        <label>Owner</label>
+        <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);padding:7px 9px;border:1px solid var(--border2);background:var(--panel2);line-height:1.6">[PROFILE LINK PENDING]<br><span style="font-size:7px;color:var(--dim);letter-spacing:0.08em">Owner has not enabled public profile</span></div>
+      </div>
+
+      <div class="req-field">
+        <label>Carrier status</label>
+        <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);padding:7px 9px;border:1px solid var(--border2);background:var(--panel2)">En route — destination unspecified<br><span style="font-size:7px;color:var(--dim)">Carrier does not return. Mission continues until failure or reassignment.</span></div>
+      </div>
+
+      <div style="border-top:1px solid var(--border);padding-top:12px">
+        <div class="req-recent-title" style="margin-bottom:10px">Mission log — NT-3184v1</div>
+
+        <div style="border:1px solid var(--border2);background:var(--panel2);margin-bottom:8px">
+          <div style="padding:8px 10px;border-bottom:1px solid var(--border2);display:flex;justify-content:space-between;align-items:center">
+            <span style="font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);letter-spacing:0.08em">MISSION 1</span>
+            <span style="font-family:'Space Mono',monospace;font-size:7px;color:var(--dim)">no data</span>
+          </div>
+          <div style="padding:8px 10px;font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);line-height:1.6;opacity:0.4">
+            No mission record available.<br>Mini-drones deployed: unknown.
+          </div>
+        </div>
+
+        <div style="border:1px solid var(--border);background:var(--panel2);margin-bottom:8px">
+          <div style="padding:8px 10px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+            <span style="font-family:'Space Mono',monospace;font-size:8px;color:var(--data);letter-spacing:0.08em">MISSION 2 · current</span>
+            <span style="font-family:'Space Mono',monospace;font-size:7px;color:var(--dim)">active</span>
+          </div>
+          <div style="padding:8px 10px;font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);line-height:1.7">
+            <div style="color:var(--body);margin-bottom:6px">Flagged gravitational anomaly — en route region toward Proxima Centauri</div>
+            Mission type: personal / open observation<br>
+            Mission brief: investigate gravitational signature flagged by passing carrier. Owner discretion, no stated end condition.
+          </div>
+          <div style="padding:8px 10px;border-top:1px solid var(--border2)">
+            <div style="font-family:'Space Mono',monospace;font-size:7px;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">Mini-drones deployed</div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:5px 0;border-bottom:1px solid var(--border2)">
+              <div>
+                <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--data)">M2-9KXR.1</div>
+                <div style="font-family:'Space Mono',monospace;font-size:7px;color:var(--dim);margin-top:2px">Rogue planet · stable orbit · this report</div>
+              </div>
+              <div style="font-family:'Space Mono',monospace;font-size:7px;color:var(--green);white-space:nowrap;margin-top:2px">active ⏚</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+</section>
+
+<!-- RIGHT: TRANSLATED REPORT -->
+<section class="report-col">
+  <div class="report-header">
+    <div class="report-header-title">Translated report — 001 · first</div>
+    <div class="report-header-id">Rogue Planet — en route, Proxima heading</div>
+  </div>
+  <div class="report-body">
+    <div style="font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);letter-spacing:0.1em;border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:14px;line-height:1.6">First report from NT-3184v1 · no prior transmissions from this drone · dataset accumulating · subscribe for subsequent reports</div>
+    <p class="lead">A laser-launched craft passed through here years ago, en route to Proxima Centauri, and flagged a gravitational signature inconsistent with empty space. It did not stop and is not expected to. It remains on its original heading, years from arrival.</p>
+    <p class="lead">The carrier that brought me here was launched afterward, specifically for this location. It crossed the distance, decelerated, and released me on approach.</p>
+    <p class="lead">A rogue planet. No host star. No companion within detectable range.</p>
+    <h2>Composition and classification</h2>
+    <p>Mass: 7.4 Jupiter masses. This sits inside the range where the planet/brown-dwarf boundary has never been cleanly drawn — no fusion at the core, no deuterium burn, no signature consistent with even the lowest-mass true dwarfs. Internal heat flux is consistent with retained formation energy, still radiating outward at a rate that places formation well outside any timeframe a simple cooling-curve model would predict for a body this size — the dissipation has been slower than expected, by a margin worth noting on its own.</p>
+    <p>Atmosphere: dense, hydrogen-dominant, strongly stratified. Pressure-broadened absorption at depth traps outgoing thermal radiation — collision-induced absorption, well characterized, behaving exactly as modeled. Deeper layers run warmer than upper layers by a wide, consistent margin.</p>
+    <h2>Surface and water</h2>
+    <p>Full-depth atmospheric sounding returns surface temperatures consistent with standing liquid water across a meaningful fraction of the surface, maintained entirely by retained internal heat. No tidal partner detected within a range that could contribute meaningfully through flexing. The heat budget closes without one.</p>
+    <h2>Chemistry and the biosignature question</h2>
+    <p>Spectroscopic and in-situ sampling shows organic chemistry above abiotic baseline — longer carbon chains than background synthesis typically sustains, with a distribution-evenness profile that does not match the smooth, monotonic curve abiotic chemistry tends to produce on its own.</p>
+    <p><strong style="color:var(--white)">Isotopic analysis.</strong> Deuterium/hydrogen ratio measured via CH₃D absorption at 4.7 μm: <strong style="color:var(--data)">2.31 × 10⁻⁵</strong>, modestly enhanced relative to the protosolar baseline of 2.1 × 10⁻⁵. At this body's mass — 7.4 Jupiter masses, below the ~13 Jupiter mass threshold at which deuterium burning would have depleted the original reservoir — this measurement is meaningful rather than incidental. The enhancement is consistent with either extended atmospheric escape, favoring an older formation age, or deuterium-enriched material delivered during formation, bearing on the ejection-versus-collapse question below. Insufficient alone to resolve either.</p>
+    <p>Carbon-13/carbon-12 and nitrogen-15/nitrogen-14 ratios — the two isotope signatures most directly diagnostic of biological versus abiotic origin — require physical sampling and mass spectrometry to resolve with confidence. Not achievable from current orbital position.</p>
+    <p>Chirality measurement did not resolve to the confidence threshold required to call it decisive — circular polarization spectroscopy at this range is at the edge of current instrument capability. Amino acid analogues are present in trace quantity.</p>
+    <div class="flag-block"><strong>✦ Forwarded for system analysis</strong>δ13C and δ15N measurement flagged for a future surface mission. Chirality results pending. Subscribe for updates.</div>
+    <h2>Origin and history</h2>
+    <p>Formation pathway is unresolved: independent collapse from a sub-stellar cloud fragment, or ejection from a planetary system following a gravitational encounter. Surface dust accumulation, denser along the leading face, is consistent with extended unbound transit duration but does not distinguish between the two formation scenarios.</p>
+    <div class="flag-block"><strong>✦ Forwarded for system analysis</strong>Cross-reference against free-floating body catalog pending.</div>
+    <h2>Trajectory</h2>
+    <p>Heading and velocity logged and cross-referenced against the surrounding stellar neighborhood. No projected close encounter with any known system within useful projection range.</p>
+    <h2>Status</h2>
+    <p>The carrier has moved on. I am holding stable orbit. Reports will continue at regular intervals unless instructed otherwise.</p>
+  </div>
+</section>
+
+</div>
+
+<script>
+// ── TRACKER ──
+const tCv=document.getElementById('tracker');
+const tCtx=tCv.getContext('2d');
+const tip=document.getElementById('drone-tip');
+let W,H,cx,cy,pR,oR,angle=0,stars=[];
+
+function resizeTracker(){
+  const a=document.getElementById('view-area');
+  W=tCv.width=a.offsetWidth;H=tCv.height=a.offsetHeight;
+  cx=W*.5;cy=H*.45;pR=Math.min(W,H)*.2;oR=pR*1.72;
+  if(stars.length===0){
+    stars=Array.from({length:160},()=>({rx:Math.random(),ry:Math.random(),r:Math.random()*1.2+.2,a:Math.random()*.5+.15}));
+  }
+}
+
+function isBehind(a){return Math.sin(a)>0&&Math.abs(Math.cos(a)*oR)<pR*.92;}
+
+function drawTracker(){
+  tCtx.clearRect(0,0,W,H);
+  stars.forEach(s=>{tCtx.beginPath();tCtx.arc(s.rx*W,s.ry*H,s.r,0,Math.PI*2);tCtx.fillStyle=`rgba(200,220,240,${s.a})`;tCtx.fill();});
+  const g=tCtx.createRadialGradient(cx,cy,pR*.25,cx,cy,pR);
+  g.addColorStop(0,'#1A3A5C');g.addColorStop(.5,'#0D2438');g.addColorStop(.85,'#060F1E');g.addColorStop(1,'#030810');
+  tCtx.beginPath();tCtx.arc(cx,cy,pR,0,Math.PI*2);tCtx.fillStyle=g;tCtx.fill();
+  const atm=tCtx.createRadialGradient(cx,cy,pR*.88,cx,cy,pR*1.1);
+  atm.addColorStop(0,'rgba(79,195,247,0)');atm.addColorStop(.65,'rgba(79,195,247,0.04)');atm.addColorStop(1,'rgba(79,195,247,0.18)');
+  tCtx.beginPath();tCtx.arc(cx,cy,pR*1.1,0,Math.PI*2);tCtx.fillStyle=atm;tCtx.fill();
+  tCtx.beginPath();tCtx.ellipse(cx,cy,oR,oR*.26,0,0,Math.PI*2);
+  tCtx.strokeStyle='rgba(79,195,247,0.09)';tCtx.lineWidth=1;tCtx.setLineDash([3,8]);tCtx.stroke();tCtx.setLineDash([]);
+  const behind=isBehind(angle);
+  const dx=cx+Math.cos(angle)*oR,dy=cy+Math.sin(angle)*oR*.26;
+  if(!behind){
+    for(let i=28;i>=0;i--){const ta=angle-(i/28)*.45;if(!isBehind(ta)){tCtx.beginPath();tCtx.arc(cx+Math.cos(ta)*oR,cy+Math.sin(ta)*oR*.26,1.2,0,Math.PI*2);tCtx.fillStyle=`rgba(79,195,247,${(1-i/28)*.28})`;tCtx.fill();}}
+    tCtx.beginPath();tCtx.arc(dx,dy,3.5,0,Math.PI*2);tCtx.fillStyle='#4FC3F7';tCtx.fill();
+    tCtx.beginPath();tCtx.arc(dx,dy,7,0,Math.PI*2);tCtx.strokeStyle='rgba(79,195,247,0.22)';tCtx.lineWidth=1;tCtx.stroke();
+  } else {
+    tCtx.beginPath();tCtx.arc(dx,dy,2,0,Math.PI*2);tCtx.fillStyle='rgba(79,195,247,0.1)';tCtx.fill();
+  }
+  tCv._dx=dx;tCv._dy=dy;tCv._behind=behind;
+  angle+=.004;requestAnimationFrame(drawTracker);
+}
+
+tCv.addEventListener('mousemove',e=>{
+  const r=tCv.getBoundingClientRect();
+  const dist=Math.sqrt((e.clientX-r.left-(tCv._dx||0))**2+(e.clientY-r.top-(tCv._dy||0))**2);
+  if(dist<22){
+    tip.style.display='block';tip.style.left=(tCv._dx+14)+'px';tip.style.top=Math.max(8,tCv._dy-30)+'px';
+    tip.innerHTML=tCv._behind?'NT-3184v1/M2-9KXR.1<br>Status: occluded<br>Behind planet body<br>Signal: intermittent':'NT-3184v1/M2-9KXR.1<br>Orbit: stable ⏚<br>Signal: SAAAD ●<br>Instruments: active';
+  } else tip.style.display='none';
+});
+
+const roT=new ResizeObserver(()=>resizeTracker());
+roT.observe(document.getElementById('view-area'));
+resizeTracker();drawTracker();
+
+// ── CAMERA STATIC ──
+const cCv=document.getElementById('cam-canvas');
+const cCtx=cCv.getContext('2d');
+const cCvB=document.getElementById('cam-canvas-b');
+const cCtxB=cCvB.getContext('2d');
+const instTag=document.getElementById('instTag');
+
+// ═══ CAMERA RENDERING ENGINE — real spherical projection, pre-rendered rotation frames ═══
+// This body has no host star. Illumination comes only from faint distant stars;
+// the real signal lives in internal heat (infrared/thermal) and magnetospheric
+// aurora (visible/UV). See Nasaat engine specification for the full rule set.
+
+const CAM_TEX_W = 400, CAM_TEX_H = 200;
+const CAM_FRAME_COUNT = 48;
+const CAM_SIZE = 280;
+const CAM_ROTATION_PERIOD_MS = 22000;
+let camMode = null;
+let camFrames = { vis: null, ir: null, uv: null, therm: null };
+let camSharedTex = null;
+let camFrameIndex = 0;
+let camSimTime = 0;
+let camLastRAF = null;
+
+function seedFromString(str){
+  let h = 0;
+  for (let i=0;i<str.length;i++){ h = (h*31 + str.charCodeAt(i)) >>> 0; }
+  return h;
+}
+function seededRandom(seed){
+  let s = seed;
+  return function(){ s = (s*1103515245+12345) >>> 0; return s/4294967296; };
+}
+const camRand = seededRandom(seedFromString('nt-3184-visual'));
+
+const camDetector = {
+  temperature: 0, targetTemperature: 0,
+  gain: 1.0, idealGain: 1.0,
+  noiseLevel: 0, integrationMs: 0,
+  booted: false, calibratedAt: 0, deadPixels: []
+};
+const camModeTargetTemp = { vis: 92, ir: 38, uv: 105, therm: 34 };
+const camModeIdealGain  = { vis: 8.2, ir: 1.4, uv: 9.6, therm: 1.1 };
+
+function generateCamTexture(){
+  const tex = document.createElement('canvas');
+  tex.width = CAM_TEX_W; tex.height = CAM_TEX_H;
+  const tctx = tex.getContext('2d');
+  const img = tctx.createImageData(CAM_TEX_W, CAM_TEX_H);
+  const d = img.data;
+  const bands = [];
+  for(let i=0;i<6;i++){
+    bands.push({ freq: 2+camRand()*4, phase: camRand()*Math.PI*2, amp: 0.15+camRand()*0.25, speed:(camRand()-0.5)*0.6 });
+  }
+  const storms = [];
+  for(let i=0;i<4;i++){
+    storms.push({ lon: camRand()*Math.PI*2, lat:(camRand()-0.5)*Math.PI*0.6, radius:0.15+camRand()*0.2, strength:0.3+camRand()*0.4 });
+  }
+  for(let y=0;y<CAM_TEX_H;y++){
+    const lat = (y/CAM_TEX_H - 0.5) * Math.PI;
+    for(let x=0;x<CAM_TEX_W;x++){
+      const lon = (x/CAM_TEX_W) * Math.PI*2;
+      let v = 0.55;
+      bands.forEach(b=>{ v += Math.sin(lat*b.freq*3 + b.phase + lon*b.speed) * b.amp * 0.25; });
+      v += Math.sin(lon*9+lat*7)*0.04 + Math.sin(lon*23-lat*13+1.7)*0.02;
+      storms.forEach(s=>{
+        let dLon=Math.abs(lon-s.lon); if(dLon>Math.PI) dLon=Math.PI*2-dLon;
+        const dist=Math.sqrt(dLon*dLon+(lat-s.lat)*(lat-s.lat));
+        if(dist<s.radius){ const f=1-dist/s.radius; v += f*s.strength*(Math.sin(dist*20-f*6)*0.5+0.5); }
+      });
+      v = Math.max(0, Math.min(1, v));
+      const equatorProximity = 1 - Math.min(1, Math.abs(lat)/(Math.PI*0.5));
+      let heat = 0.3 + equatorProximity*0.55;
+      heat += Math.sin(lon*5+lat*11)*0.05;
+      heat += (1-v)*0.15;
+      heat = Math.max(0, Math.min(1, heat));
+      const idx=(y*CAM_TEX_W+x)*4;
+      d[idx]=Math.round(v*255); d[idx+1]=Math.round(heat*255); d[idx+2]=200; d[idx+3]=255;
+    }
+  }
+  tctx.putImageData(img,0,0);
+  return tex;
+}
+
+const camFaintStars = [];
+(function(){
+  const sr = seededRandom(seedFromString('nt-3184-visual-stars'));
+  for(let i=0;i<5;i++){
+    const az=sr()*Math.PI*2, el=(sr()-0.5)*Math.PI*0.7;
+    camFaintStars.push({ x:Math.cos(el)*Math.sin(az), z:Math.cos(el)*Math.cos(az), y:Math.sin(el), strength:0.04+sr()*0.05 });
+  }
+})();
+
+function renderCamFrame(texCanvas, rotationRad, mode){
+  const off = document.createElement('canvas');
+  off.width = CAM_SIZE; off.height = CAM_SIZE;
+  const octx = off.getContext('2d');
+  const img = octx.createImageData(CAM_SIZE, CAM_SIZE);
+  const d = img.data;
+  const texCtx = texCanvas.getContext('2d');
+  const texData = texCtx.getImageData(0,0,CAM_TEX_W,CAM_TEX_H).data;
+  const R = CAM_SIZE/2 - 4, cx = CAM_SIZE/2, cy = CAM_SIZE/2;
+
+  for(let py=0; py<CAM_SIZE; py++){
+    for(let px=0; px<CAM_SIZE; px++){
+      const nx=(px-cx)/R, ny=(py-cy)/R, rr=nx*nx+ny*ny, idx=(py*CAM_SIZE+px)*4;
+      if(rr>1){ d[idx]=0;d[idx+1]=0;d[idx+2]=0;d[idx+3]=0; continue; }
+      const nz=Math.sqrt(1-rr);
+      const lat=Math.asin(ny), lon=Math.atan2(nx,nz)+rotationRad;
+      let u=((lon/(Math.PI*2))%1+1)%1, v=(lat/Math.PI)+0.5;
+      const tx=Math.floor(u*CAM_TEX_W), ty=Math.floor(Math.min(0.999,Math.max(0,v))*CAM_TEX_H);
+      const tIdx=(ty*CAM_TEX_W+tx)*4;
+      const reflectance=texData[tIdx]/255, heat=texData[tIdx+1]/255;
+      const wx=nx*Math.cos(-rotationRad)-nz*Math.sin(-rotationRad);
+      const wz=nx*Math.sin(-rotationRad)+nz*Math.cos(-rotationRad);
+      const poleProximity=Math.max(0,(Math.abs(lat)/(Math.PI*0.5))-0.72)/0.28;
+      const auroraNoise=Math.sin(lon*8+rotationRad*3)*0.5+0.5;
+      const aurora=poleProximity>0?poleProximity*(0.4+auroraNoise*0.6):0;
+      let r,g,b;
+      if(mode==='vis'||mode==='uv'){
+        let starlight=0;
+        camFaintStars.forEach(s=>{ const d3=wx*s.x+wz*s.z+ny*s.y; starlight+=Math.max(0,d3)*s.strength; });
+        starlight=Math.min(1,starlight);
+        if(mode==='vis'){
+          const cb=0.4+reflectance*0.3;
+          r=Math.round(cb*starlight*180+aurora*70); g=Math.round(cb*starlight*195+aurora*210); b=Math.round(cb*starlight*220+aurora*60);
+        } else {
+          r=Math.round(starlight*90+aurora*60); g=Math.round(starlight*60+aurora*180); b=Math.round(starlight*140+aurora*220);
+        }
+      } else {
+        if(mode==='ir'){
+          const em=heat*0.75+reflectance*0.15;
+          r=Math.round(em*255); g=Math.round(em*130); b=Math.round(em*35);
+        } else {
+          const em=heat;
+          r=Math.round(em*255); g=Math.round(em*90+em*em*60); b=Math.round(em*20);
+        }
+      }
+      d[idx]=r; d[idx+1]=g; d[idx+2]=b; d[idx+3]=255;
+    }
+  }
+  octx.putImageData(img,0,0);
+  return off;
+}
+
+function generateCamFramesForMode(mode){
+  if(!camSharedTex) camSharedTex = generateCamTexture();
+  const arr=[];
+  for(let i=0;i<CAM_FRAME_COUNT;i++){
+    arr.push(renderCamFrame(camSharedTex, (i/CAM_FRAME_COUNT)*Math.PI*2, mode));
+  }
+  camFrames[mode]=arr;
+}
+
+function generateCamDeadPixels(mode){
+  const dpr = seededRandom(seedFromString('nt-3184-deadpixels-'+mode));
+  const list=[]; const count=2+Math.floor(dpr()*3);
+  for(let i=0;i<count;i++) list.push({x:Math.floor(dpr()*CAM_SIZE), y:Math.floor(dpr()*CAM_SIZE), color:dpr()>0.5?255:0});
+  return list;
+}
+
+const CAM_NOISE_COUNT=6;
+let camNoisePatterns=[];
+function generateCamNoisePatterns(){
+  for(let i=0;i<CAM_NOISE_COUNT;i++){
+    const nc=document.createElement('canvas'); nc.width=CAM_SIZE; nc.height=CAM_SIZE;
+    const nctx=nc.getContext('2d'); const img=nctx.createImageData(CAM_SIZE,CAM_SIZE); const d=img.data;
+    for(let p=0;p<d.length;p+=4){ const v=Math.random()*255; d[p]=d[p+1]=d[p+2]=v; d[p+3]=Math.random()*45; }
+    nctx.putImageData(img,0,0); camNoisePatterns.push(nc);
+  }
+}
+
+let camScanlinePattern=null;
+function generateCamScanlinePattern(){
+  const nc=document.createElement('canvas'); nc.width=4; nc.height=4;
+  const nctx=nc.getContext('2d'); nctx.clearRect(0,0,4,4);
+  nctx.fillStyle='rgba(0,0,0,0.16)'; nctx.fillRect(0,0,4,1);
+  camScanlinePattern=cCtxB.createPattern(nc,'repeat');
+}
+
+let camCosmicRays=[];
+function maybeSpawnCamCosmicRay(dtMs){
+  if(Math.random() < dtMs*0.00012){
+    camCosmicRays.push({ x:Math.random()*CAM_SIZE, y:Math.random()*CAM_SIZE, len:8+Math.random()*26, angle:Math.random()*Math.PI*2, expiresAt:camSimTime+90 });
+  }
+  camCosmicRays = camCosmicRays.filter(r=>r.expiresAt>camSimTime);
+}
+
+function drawCamFrameToCtx(targetCtx, frame){
+  const a=document.getElementById('view-area');
+  const scale=Math.min(a.offsetWidth,a.offsetHeight)/CAM_SIZE;
+  const dw=CAM_SIZE*scale, dh=CAM_SIZE*scale;
+  targetCtx.clearRect(0,0,cCv.width,cCv.height);
+  targetCtx.drawImage(frame,(cCv.width-dw)/2,(cCv.height-dh)/2,dw,dh);
+}
+
+function drawCamDetectorOverlay(sourceFrame){
+  const a=document.getElementById('view-area');
+  const scale=Math.min(a.offsetWidth,a.offsetHeight)/CAM_SIZE;
+  const dw=CAM_SIZE*scale, dh=CAM_SIZE*scale;
+  const ox=(cCvB.width-dw)/2, oy=(cCvB.height-dh)/2;
+  cCtxB.clearRect(0,0,cCvB.width,cCvB.height);
+
+  cCtxB.save();
+  cCtxB.filter='blur(5px)'; cCtxB.globalAlpha=0.16; cCtxB.globalCompositeOperation='lighter';
+  cCtxB.drawImage(sourceFrame, ox, oy, dw, dh);
+  cCtxB.restore();
+
+  if(camNoisePatterns.length){
+    const nf=camNoisePatterns[Math.floor(camSimTime/90)%camNoisePatterns.length];
+    cCtxB.globalAlpha=Math.min(0.5, camDetector.noiseLevel);
+    cCtxB.drawImage(nf, ox, oy, dw, dh);
+    cCtxB.globalAlpha=1;
+  }
+  if(camScanlinePattern){ cCtxB.fillStyle=camScanlinePattern; cCtxB.fillRect(ox,oy,dw,dh); }
+
+  camCosmicRays.forEach(r=>{
+    const rx=ox+r.x*scale, ry=oy+r.y*scale;
+    cCtxB.strokeStyle='rgba(255,255,255,0.9)'; cCtxB.lineWidth=1.4;
+    cCtxB.beginPath(); cCtxB.moveTo(rx,ry);
+    cCtxB.lineTo(rx+Math.cos(r.angle)*r.len*scale, ry+Math.sin(r.angle)*r.len*scale);
+    cCtxB.stroke();
+  });
+  camDetector.deadPixels.forEach(p=>{
+    cCtxB.fillStyle='rgb('+p.color+','+p.color+','+p.color+')';
+    cCtxB.fillRect(ox+p.x*scale, oy+p.y*scale, 2, 2);
+  });
+}
+
+function runCamCalibration(){
+  camDetector.calibratedAt = camSimTime;
+  cCvB.style.opacity='0.15';
+  setTimeout(()=>{ cCvB.style.opacity='1'; }, 220);
+}
+
+function resizeCamCanvas(){
+  const a=document.getElementById('view-area');
+  cCv.width=a.offsetWidth; cCv.height=a.offsetHeight;
+  cCvB.width=a.offsetWidth; cCvB.height=a.offsetHeight;
+}
+
+function drawCam(time){
+  if(camLastRAF===null) camLastRAF=time;
+  const dt=time-camLastRAF; camLastRAF=time;
+  if(!camMode){ requestAnimationFrame(drawCam); return; }
+
+  camSimTime += dt;
+  const progress=(camSimTime % CAM_ROTATION_PERIOD_MS)/CAM_ROTATION_PERIOD_MS;
+  camFrameIndex = Math.floor(progress*CAM_FRAME_COUNT) % CAM_FRAME_COUNT;
+
+  camDetector.temperature += (camDetector.targetTemperature-camDetector.temperature)*Math.min(1,dt*0.0009);
+  camDetector.gain += (camDetector.idealGain-camDetector.gain)*Math.min(1,dt*0.0015);
+  camDetector.noiseLevel = Math.max(0.03, (camDetector.temperature/140)*(camDetector.gain/6));
+  camDetector.integrationMs += dt;
+
+  if(camDetector.booted && camSimTime-camDetector.calibratedAt>26000) runCamCalibration();
+  maybeSpawnCamCosmicRay(dt);
+
+  const modeFrames=camFrames[camMode];
+  if(modeFrames && camDetector.booted){
+    const frame=modeFrames[camFrameIndex];
+    drawCamFrameToCtx(cCtx, frame);
+    drawCamDetectorOverlay(frame);
+    cCvB.style.opacity='1';
+  }
+  requestAnimationFrame(drawCam);
+}
+try {
+  generateCamNoisePatterns();
+  generateCamScanlinePattern();
+} catch(e) {
+  console.error('camera engine initialization failed, camera feeds may be unavailable:', e);
+}
+const roCam=new ResizeObserver(()=>resizeCamCanvas());
+roCam.observe(document.getElementById('view-area'));
+resizeCamCanvas();
+requestAnimationFrame(drawCam);
+
+function bootCamera(mode, displayName){
+  camMode=null;
+  camDetector.booted=false;
+  cCv.style.display='block'; cCvB.style.display='block';
+  instTag.style.display='block';
+  instTag.textContent='OFFLINE'; instTag.className='inst-tag st-offline';
+  cCtx.clearRect(0,0,cCv.width,cCv.height);
+  cCvB.style.opacity='0';
+
+  const proceed = () => {
+    const steps=[
+      {text:'powering up',delay:260},{text:'initializing',delay:280},
+      {text:'adjusting gain',delay:260},{text:'calibrating',delay:320},{text:'dark frame',delay:260}
+    ];
+    instTag.className='inst-tag st-booting';
+    let i=0;
+    (function nextStep(){
+      if(i>=steps.length){
+        camDetector.targetTemperature=camModeTargetTemp[mode];
+        camDetector.idealGain=camModeIdealGain[mode];
+        camDetector.deadPixels=generateCamDeadPixels(mode);
+        camDetector.calibratedAt=camSimTime;
+        camDetector.integrationMs=0;
+        camDetector.booted=true;
+        camMode=mode;
+        instTag.textContent='ONLINE'; instTag.className='inst-tag st-online';
+        if(camNoisePatterns.length){
+          let bf=0;
+          const a=document.getElementById('view-area');
+          const scale=Math.min(a.offsetWidth,a.offsetHeight)/CAM_SIZE;
+          const dw=CAM_SIZE*scale, dh=CAM_SIZE*scale;
+          const ox=(cCv.width-dw)/2, oy=(cCv.height-dh)/2;
+          const burstInt=setInterval(()=>{
+            const np=camNoisePatterns[bf%camNoisePatterns.length];
+            cCtx.clearRect(0,0,cCv.width,cCv.height);
+            cCtx.globalAlpha=1; cCtx.drawImage(np, ox, oy, dw, dh);
+            bf++; if(bf>4) clearInterval(burstInt);
+          },55);
+        }
+        return;
+      }
+      instTag.textContent=steps[i].text.toUpperCase();
+      setTimeout(()=>{ i++; nextStep(); }, steps[i].delay);
+    })();
+  };
+
+  if(!camFrames[mode]){
+    setTimeout(()=>{ generateCamFramesForMode(mode); proceed(); }, 30);
+  } else {
+    proceed();
+  }
+}
+
+// ── SPECTRUM SLIDER ──
+const sBurst=document.getElementById('static-burst');
+const sBCtx=sBurst.getContext('2d');
+let burstInt=null;
+
+function showBurst(duration){
+  const a=document.getElementById('view-area');
+  sBurst.width=a.offsetWidth;sBurst.height=a.offsetHeight;
+  sBurst.style.opacity='1';
+  let t=0;
+  if(burstInt)clearInterval(burstInt);
+  burstInt=setInterval(()=>{
+    const w=sBurst.width,h=sBurst.height,id=sBCtx.createImageData(w,h),d=id.data;
+    for(let i=0;i<d.length;i+=4){const v=Math.random()>.4?Math.floor(Math.random()*90+10):0;d[i]=d[i+1]=d[i+2]=v;d[i+3]=v>0?210:0;}
+    sBCtx.putImageData(id,0,0);t+=50;
+    if(t>=duration){clearInterval(burstInt);sBurst.style.opacity='0';sBCtx.clearRect(0,0,w,h);}
+  },50);
+}
+
+// ── SPECTRUM SLIDER ──
+const specNames=[
+  'INFRARED · 1500nm','INFRARED · 1000nm','INFRARED · 750nm',
+  'VISIBLE · RED · 700nm','VISIBLE · ORANGE · 620nm','VISIBLE · YELLOW · 580nm',
+  'VISIBLE · GREEN · 530nm','VISIBLE · BLUE · 470nm','VISIBLE · VIOLET · 420nm',
+  'ULTRAVIOLET · 380nm','ULTRAVIOLET · 300nm','ULTRAVIOLET · 200nm',
+  'FAR UV · 120nm','EUV · 50nm','SOFT X-RAY · 10nm','X-RAY · 1nm'
+];
+
+// planet color palettes per spectrum position (0-100)
+function specPlanetColor(v){
+  if(v<20) return['#3D1800','#200E00','#0D0500','#040200']; // deep IR — hot red/brown
+  if(v<35) return['#2A1400','#18090','#0A0400','#030100']; // near IR — dark amber
+  if(v<50) return['#1A3A5C','#0D2438','#060F1E','#030810']; // visible — default blue
+  if(v<65) return['#1A2A1A','#0D180D','#060A06','#020302']; // green channel
+  if(v<80) return['#1A0A3D','#0D0525','#060010','#020006']; // UV — deep purple
+  return['#0A0A0A','#050505','#020202','#010101']; // X-ray — near black with faint structure
+}
+
+function updateSpectrum(v){
+  const idx=Math.floor(v/100*(specNames.length-1));
+  document.getElementById('spec-name').textContent=specNames[idx];
+  // shift planet color live using spectrum overlay tint
+  const pct=v/100;
+  const hue=Math.round(280-pct*280); // red→violet→xray
+  const sat=pct<0.3?60:pct<0.7?80:20;
+  document.getElementById('view-area').style.setProperty('--spec-tint',`hsla(${hue},${sat}%,40%,0.08)`);
+}
+
+// ── VIEW SWITCHER ──
+
+// ═══ RADIO — scrolling spectrogram + candidate signal log ═══
+const rCv=document.getElementById('radio-spectrogram');
+const rCtx=rCv.getContext('2d');
+let radioInterval=null;
+let radioLogTimer=null;
+let radioSignalFlash=0;
+let radioStreakX=0;
+
+function initRadioCanvas(){
+  const a=document.getElementById('view-area');
+  rCv.width=a.offsetWidth;
+  rCv.height=a.offsetHeight;
+  rCtx.fillStyle='#000';
+  rCtx.fillRect(0,0,rCv.width,rCv.height);
+}
+
+function drawRadioFrame(){
+  const w=rCv.width,h=rCv.height;
+  if(w<2||h<2)return;
+  const shift=2;
+  try{
+    const imgData=rCtx.getImageData(0,0,w,h-shift);
+    rCtx.putImageData(imgData,0,shift);
+  }catch(e){}
+  for(let y=0;y<shift;y++){
+    for(let x=0;x<w;x+=2){
+      const v=Math.random()*28;
+      rCtx.fillStyle='rgba(60,90,120,'+(v/100)+')';
+      rCtx.fillRect(x,y,2,1);
+    }
+  }
+  if(radioSignalFlash>0){
+    rCtx.fillStyle='rgba(125,187,214,0.9)';
+    rCtx.fillRect(radioStreakX,0,3,shift);
+    radioSignalFlash--;
+  }
+}
+
+function triggerRadioSignal(){
+  radioStreakX=Math.random()*rCv.width;
+  radioSignalFlash=45;
+}
+
+function startRadioSpectrogram(){
+  initRadioCanvas();
+  if(radioInterval)clearInterval(radioInterval);
+  radioInterval=setInterval(drawRadioFrame,70);
+}
+function stopRadioSpectrogram(){
+  if(radioInterval){clearInterval(radioInterval);radioInterval=null;}
+}
+
+const radioMessages=[
+  {text:'scan cycle complete — no anomalies'},
+  {text:'background noise only'},
+  {text:'background noise only'},
+  {text:'scan cycle complete — no anomalies'},
+  {text:'unknown narrow-band emission — forwarded — carrier spike detected — duration: 0.42s',signal:true},
+  {text:'candidate flagged: 1,612 MHz — insufficient repeat detections',signal:true},
+  {text:'false positive — terrestrial interference, satellite downlink band'},
+  {text:'background noise only'}
+];
+
+function addRadioLogLine(){
+  const logEl=document.getElementById('radio-log');
+  if(!logEl)return;
+  const msg=radioMessages[Math.floor(Math.random()*radioMessages.length)];
+  const div=document.createElement('div');
+  div.className='radio-log-line'+(msg.signal?' signal':'');
+  div.textContent=msg.text;
+  logEl.appendChild(div);
+  if(msg.signal)triggerRadioSignal();
+  while(logEl.children.length>6){logEl.removeChild(logEl.firstChild);}
+}
+
+function scheduleRadioLog(){
+  const delay=2200+Math.random()*3000;
+  radioLogTimer=setTimeout(()=>{
+    addRadioLogLine();
+    scheduleRadioLog();
+  },delay);
+}
+
+function stopRadioLog(){
+  if(radioLogTimer){clearTimeout(radioLogTimer);radioLogTimer=null;}
+  const logEl=document.getElementById('radio-log');
+  if(logEl)logEl.innerHTML='';
+}
+
+let currentView='tracker';
+
+// set true once real procedural visual data exists for this body — retires the system rendering automatically
+const hasRealVisual = false;
+
+function setView(view,btn){
+  document.querySelectorAll('.vt-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  tip.style.display='none';
+
+  // hide everything
+  tCv.style.display='none';
+  document.getElementById('tracker-tag').style.display='none';
+  cCv.style.display='none';
+  cCvB.style.display='none';
+  instTag.style.display='none';
+  document.getElementById('cam-tag').style.display='none';
+  document.getElementById('cam-status-center').style.display='none';
+  document.getElementById('spec-overlay').style.display='none';
+  document.getElementById('spec-slider-overlay').style.display='none';
+  rCv.style.display='none';
+  document.getElementById('radio-log').style.display='none';
+  document.getElementById('rendering-view').style.display='none';
+  camMode=null;
+  stopRadioSpectrogram();
+  stopRadioLog();
+
+  const camNames = { vis:'CAM-A · VISIBLE SPECTRUM', ir:'CAM-B · INFRARED', uv:'CAM-C · ULTRAVIOLET', therm:'CAM-E · THERMAL' };
+
+  if(view==='rendering'){
+    showBurst(700);
+    document.getElementById('rendering-view').style.display='flex';
+    const missing = document.getElementById('rendering-missing');
+    const unavailable = document.getElementById('rendering-unavailable');
+    const img = document.getElementById('rendering-img');
+    missing.style.display='none';
+    unavailable.style.display='none';
+    if(hasRealVisual){
+      img.style.display='none';
+      unavailable.style.display='flex';
+    } else {
+      img.style.display='block';
+      img.src = img.src; // retrigger load in case of earlier error state
+    }
+  } else if(view==='tracker'){
+    showBurst(700);
+    tCv.style.display='block';
+    document.getElementById('tracker-tag').style.display='block';
+  } else if(view==='spec'){
+    showBurst(700);
+    tCv.style.display='block';
+    document.getElementById('tracker-tag').style.display='block';
+    document.getElementById('spec-overlay').style.display='block';
+    document.getElementById('spec-slider-overlay').style.display='flex';
+  } else if(view==='radio'){
+    showBurst(700);
+    rCv.style.display='block';
+    document.getElementById('radio-log').style.display='block';
+    document.getElementById('cam-tag').style.display='block';
+    document.getElementById('cam-tag').textContent='ARRAY-D · RADIO · LISTENING';
+    startRadioSpectrogram();
+    scheduleRadioLog();
+  } else {
+    // vis / ir / uv / therm — real rendered camera feed, own boot sequence handles the transition
+    resizeCamCanvas();
+    bootCamera(view, camNames[view]);
+  }
+  currentView=view;
+}
+
+// init — show tracker
+tCv.style.display='block';
+
+// ── INSTRUMENTS ──
+const wCv=document.getElementById('wave');
+const wCtx=wCv.getContext('2d');
+let wT=0;
+function drawWave(){
+  wCv.width=wCv.offsetWidth*2;wCv.height=40;
+  const w=wCv.width,h=wCv.height;
+  wCtx.clearRect(0,0,w,h);wCtx.beginPath();
+  for(let x=0;x<w;x++){
+    const y=h/2+Math.sin((x/w)*Math.PI*8+wT)*h*.2+Math.sin((x/w)*Math.PI*13+wT*1.3)*h*.08+Math.sin((x/w)*Math.PI*3+wT*.7)*h*.1;
+    x===0?wCtx.moveTo(x,y):wCtx.lineTo(x,y);
+  }
+  wCtx.strokeStyle='rgba(127,219,255,0.65)';wCtx.lineWidth=1.5;wCtx.stroke();
+  wT+=.06;
+}
+setInterval(drawWave,50);
+
+let gravBase=74,thermBase=58,chemBase=68;
+function updateInstruments(){
+  gravBase+=(Math.random()-.5)*3;gravBase=Math.max(68,Math.min(82,gravBase));
+  thermBase+=(Math.random()-.5)*4;thermBase=Math.max(48,Math.min(72,thermBase));
+  chemBase+=(Math.random()-.5)*2;chemBase=Math.max(64,Math.min(72,chemBase));
+  document.getElementById('grav-bar').style.width=gravBase.toFixed(1)+'%';
+  document.getElementById('therm-bar').style.width=thermBase.toFixed(1)+'%';
+  document.getElementById('chem-bar').style.width=chemBase.toFixed(1)+'%';
+  document.getElementById('grav-val').textContent=(7.38+Math.random()*.06).toFixed(2)+' Jₘ';
+  document.getElementById('therm-val').textContent=Math.round(265+Math.random()*26)+'K';
+  document.getElementById('chem-val').textContent=(2.28+Math.random()*.06).toFixed(2)+'×10⁻⁵ ↑';
+  document.getElementById('sig-val').textContent=['idle ○','idle ○','idle ○','preparing ◑'][Math.floor(Math.random()*4)];
+}
+setInterval(updateInstruments,900);
+
+let reads=14892,viewers=47;
+setInterval(()=>{if(Math.random()<.15){reads++;document.getElementById('reads').textContent=reads.toLocaleString();}},3000);
+setInterval(()=>{viewers+=Math.floor((Math.random()-.4)*3);viewers=Math.max(30,Math.min(80,viewers));document.getElementById('viewers').textContent=viewers;},5000);
+
+function openDroneTab(){
+  const btn=document.getElementById('drone-tab-btn');
+  setTab('drone',btn);
+}
+
+function setTab(tab,btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const reportCol=document.querySelector('.report-col');
+  const midPanel=document.querySelector('.mid-panel');
+  document.querySelectorAll('.panel-content').forEach(p=>p.classList.remove('active'));
+  if(tab==='translation'){
+    reportCol.classList.add('mobile-active');
+    midPanel.classList.add('collapsed');
+  } else {
+    reportCol.classList.remove('mobile-active');
+    midPanel.classList.remove('collapsed');
+    document.getElementById('tab-'+tab).classList.add('active');
+  }
+}
+
+function submitRequest(){
+  const c=document.getElementById('req-confirm');
+  c.style.display='block';
+  setTimeout(()=>{
+    c.style.display='none';
+    document.getElementById('verify-overlay').classList.add('shown');
+  },4000);
+}
+
+function toggleFullscreen(){
+  const area = document.getElementById('view-area');
+  if(!document.fullscreenEnabled && !document.webkitFullscreenEnabled){
+    return; // silently unavailable in this browsing context (e.g. embedded preview, or iPhone Safari)
+  }
+  if(!document.fullscreenElement){
+    const req = area.requestFullscreen ? area.requestFullscreen() : (area.webkitRequestFullscreen ? area.webkitRequestFullscreen() : null);
+    if(req && req.catch){ req.catch(()=>{}); }
+  } else {
+    document.exitFullscreen ? document.exitFullscreen() : document.webkitExitFullscreen && document.webkitExitFullscreen();
+  }
+}
+document.addEventListener('fullscreenchange', ()=>{
+  resizeTracker();
+  resizeCamCanvas();
+});
+</script>
+<div class="verify-overlay" id="verify-overlay">
+  <div class="verify-box">
+    <div class="verify-box-title">VERIFICATION REQUIRED</div>
+    <div class="verify-box-sub">Tracking this request requires an account. You can log in, continue viewing without tracking it, or return to the platform.</div>
+    <button class="verify-box-btn primary" onclick="window.location.href='nasaat_account.html?request=NT-3184#login'">Log in</button>
+    <button class="verify-box-btn ghost" onclick="document.getElementById('verify-overlay').classList.remove('shown')">Continue viewing</button>
+    <button class="verify-box-btn ghost" onclick="window.location.href='nasaat_platform.html'">Return to platform</button>
+  </div>
+</div>
+</body>
+</html>
