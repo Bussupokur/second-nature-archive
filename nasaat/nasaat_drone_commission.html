@@ -61,6 +61,8 @@ button{cursor:pointer;font-family:'Space Mono',monospace;border:none;background:
 @media(max-width:700px){.gallery-grid{grid-template-columns:1fr}}
 .drone-card{border:1px solid var(--border);background:var(--panel)}
 .drone-visual{height:220px;position:relative;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.enlarge-btn{position:absolute;top:8px;right:8px;z-index:5;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.05em;color:var(--data);background:rgba(5,8,16,0.75);border:1px solid var(--border);padding:5px 10px;cursor:pointer;transition:all .2s}
+.enlarge-btn:hover{border-color:var(--data);background:rgba(79,195,247,0.1)}
 .drone-visual svg{width:70%;height:70%}
 .drone-placeholder-tag{position:absolute;bottom:8px;right:10px;font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);letter-spacing:0.05em;opacity:0.6}
 .drone-info{padding:16px 18px}
@@ -188,7 +190,8 @@ button{cursor:pointer;font-family:'Space Mono',monospace;border:none;background:
     <div class="gallery-grid">
       <div class="drone-card">
         <div class="drone-visual">
-          <img src="renderings/main-drone-report-001.png" alt="TYPE 4HDUWE-89229" style="width:100%;height:100%;object-fit:contain" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+          <span class="enlarge-btn" onclick="window.open('renderings/main-drone-report-001.png','_blank')">enlarge &#8599;</span>
+          <img src="renderings/main-drone-report-001.png" alt="TYPE 4HDUWE-89229" style="width:100%;height:100%;object-fit:contain" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';this.previousElementSibling.style.display='none';">
           <div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;flex-direction:column;gap:8px">
             <svg viewBox="0 0 200 200" style="width:35%;height:35%"><ellipse cx="100" cy="100" rx="70" ry="55" fill="#0a0a0a" stroke="#2a3f55" stroke-width="1.5"/><circle cx="70" cy="90" r="4" fill="#4FC3F7" opacity="0.6"/><circle cx="130" cy="105" r="3" fill="#4FC3F7" opacity="0.4"/><circle cx="95" cy="130" r="3.5" fill="#4FC3F7" opacity="0.5"/></svg>
             <div class="drone-placeholder-tag" style="position:static">image not yet uploaded</div>
@@ -202,7 +205,8 @@ button{cursor:pointer;font-family:'Space Mono',monospace;border:none;background:
 
       <div class="drone-card">
         <div class="drone-visual">
-          <img src="renderings/main-drone-report-002.png" alt="DM-0791 carrier" style="width:100%;height:100%;object-fit:contain" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+          <span class="enlarge-btn" onclick="window.open('renderings/main-drone-report-002.png','_blank')">enlarge &#8599;</span>
+          <img src="renderings/main-drone-report-002.png" alt="DM-0791 carrier" style="width:100%;height:100%;object-fit:contain" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';this.previousElementSibling.style.display='none';">
           <div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;flex-direction:column;gap:8px">
             <svg viewBox="0 0 200 200" style="width:35%;height:35%"><ellipse cx="100" cy="100" rx="65" ry="60" fill="#0a0a0a" stroke="#2a3f55" stroke-width="1.5"/><rect x="85" y="70" width="6" height="6" fill="#FF6B35" opacity="0.5" transform="rotate(45 88 73)"/><circle cx="115" cy="120" r="3" fill="#FF6B35" opacity="0.5"/><circle cx="80" cy="115" r="3" fill="#FF6B35" opacity="0.4"/></svg>
             <div class="drone-placeholder-tag" style="position:static">image not yet uploaded</div>
