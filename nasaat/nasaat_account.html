@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nasaat — Account</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --space:#050810;--panel:#0B1628;--panel2:#0D1E35;
+  --border:#1A3A5C;--border2:#0F2540;
+  --data:#4FC3F7;--body:#C8DCF0;--symbol:#7FDBFF;
+  --flag:#FF6B35;--dim:#3A5570;--white:#E8F4FD;--green:#4ADE80;
+  --dash-mag:#5FD4FF;--dash-cyan:#5FD4FF;--dash-gold:#FFB84D;--dash-dim:#4A6B8C;--dash-panel:#050B14;--dash-panel2:#0A1A2E;
+}
+html{background:var(--space);color:var(--body);font-family:'IBM Plex Sans',sans-serif;scroll-behavior:smooth}
+body{min-height:100vh}
+button,input,textarea{cursor:pointer;font-family:'Space Mono',monospace;border:none;background:none}
+input,textarea{cursor:text}
+
+.view{display:none;min-height:100vh}
+.view.active{display:block}
+
+.nav{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:1px solid var(--border)}
+.nav-back{font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.05em;cursor:pointer}
+.nav-back:hover{color:var(--data)}
+.nav-title{font-family:'Space Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:0.1em}
+
+.wrap{max-width:520px;margin:0 auto;padding:60px 20px}
+.wrap.wide{max-width:1000px}
+
+.form-title{font-size:22px;color:var(--white);font-weight:500;margin-bottom:10px}
+.form-sub{font-size:13px;color:var(--dim);line-height:1.7;margin-bottom:32px}
+
+.field-group{margin-bottom:18px}
+.field-label{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;display:block}
+.field-input{width:100%;font-family:'Space Mono',monospace;font-size:13px;color:var(--white);background:var(--panel2);border:1px solid var(--border);padding:11px 13px;outline:none;transition:border-color .2s}
+.field-input:focus{border-color:var(--data)}
+.field-input.prefilled{animation:prefillflicker 1.2s ease}
+@keyframes prefillflicker{0%{background:var(--panel2)}15%{background:rgba(79,195,247,0.18);border-color:var(--data)}30%{background:var(--panel2);border-color:var(--border)}45%{background:rgba(79,195,247,0.12)}60%{background:var(--panel2)}100%{background:var(--panel2)}}
+textarea.field-input{resize:vertical;min-height:80px;font-family:'IBM Plex Sans',sans-serif;font-size:13px}
+
+.btn-solid{width:100%;text-align:center;padding:12px;background:var(--data);color:#04141f;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.06em;font-weight:700;margin-top:8px}
+.btn-solid:hover{opacity:0.9}
+.btn-ghost{width:100%;text-align:center;padding:12px;border:1px solid var(--border);color:var(--data);font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.06em;margin-top:8px}
+.btn-ghost:hover{border-color:var(--data)}
+
+.exists-box{border:1px solid var(--border);background:var(--panel2);padding:24px;text-align:center;margin-top:20px}
+.exists-title{font-family:'Space Mono',monospace;font-size:12px;color:var(--flag);letter-spacing:0.05em;margin-bottom:10px}
+.exists-sub{font-size:12px;color:var(--dim);line-height:1.7;margin-bottom:18px}
+
+.verify-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:14px}
+.verify-log{font-family:'Space Mono',monospace;font-size:11px;color:var(--dim);text-align:center;min-height:60px}
+.verify-log div{opacity:0;animation:fadein .4s forwards;margin-bottom:8px}
+@keyframes fadein{to{opacity:1}}
+
+/* ── DASHBOARD — interstellar command deck ── */
+#view-dashboard{position:relative;background:radial-gradient(ellipse at 30% 0%, #0A2038 0%, #050B14 55%, #020408 100%)}
+canvas#dash-starfield{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+
+.dash-nav{position:relative;z-index:2;display:flex;justify-content:space-between;align-items:center;padding:18px 26px;border-bottom:1px solid rgba(95,212,255,0.25);background:linear-gradient(180deg, rgba(10,6,32,0.85), rgba(10,6,32,0.6));backdrop-filter:blur(6px)}
+.dash-nav-title{font-family:'Space Mono',monospace;font-size:12px;color:var(--dash-mag);letter-spacing:0.15em;text-shadow:0 0 12px rgba(95,212,255,0.6)}
+.dash-nav-user{font-family:'Space Mono',monospace;font-size:10px;color:var(--dash-cyan);letter-spacing:0.06em}
+
+.dash-tabs{position:relative;z-index:2;display:flex;background:rgba(10,6,32,0.7);border-bottom:1px solid rgba(95,212,255,0.2);overflow-x:auto;backdrop-filter:blur(4px)}
+.dash-tab{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--dash-dim);padding:14px 20px;border-right:1px solid rgba(95,212,255,0.15);white-space:nowrap;cursor:pointer;transition:all .2s;position:relative}
+.dash-tab:hover{color:var(--dash-cyan)}
+.dash-tab.active{color:var(--dash-mag);text-shadow:0 0 8px rgba(95,212,255,0.7)}
+.dash-tab.active:after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--dash-mag),var(--dash-cyan));box-shadow:0 0 10px rgba(95,212,255,0.8)}
+
+.dash-panel{position:relative;z-index:2;display:none;max-width:1000px;margin:0 auto;padding:44px 24px}
+.dash-panel.active{display:block}
+.dash-panel-title{font-size:19px;color:#fff;font-weight:500;margin-bottom:22px;letter-spacing:0.02em;text-shadow:0 0 20px rgba(95,212,255,0.3)}
+.dash-subheading{font-family:'Space Mono',monospace;font-size:10px;color:var(--dash-dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(95,212,255,0.15)}
+
+.report-modal-overlay{display:none;position:fixed;inset:0;background:rgba(2,4,8,0.88);z-index:1000;align-items:center;justify-content:center;padding:20px}
+.report-modal-overlay.shown{display:flex}
+.report-modal-box{position:relative;width:100%;max-width:1100px;height:88vh;background:#000;border:1px solid rgba(95,212,255,0.3);box-shadow:0 0 60px rgba(95,212,255,0.15)}
+.report-modal-box iframe{width:100%;height:100%;border:none}
+.report-modal-close{position:absolute;top:-38px;right:0;font-family:'Space Mono',monospace;font-size:11px;color:var(--dash-cyan);letter-spacing:0.06em;cursor:pointer;padding:6px 12px;border:1px solid rgba(95,212,255,0.3);background:rgba(5,11,20,0.9)}
+.report-modal-close:hover{border-color:var(--dash-cyan)}
+
+.dash-empty{position:relative;border:1px solid rgba(63,232,224,0.25);background:linear-gradient(160deg, rgba(18,10,50,0.6), rgba(10,6,32,0.4));padding:60px 24px;text-align:center;overflow:hidden;box-shadow:0 0 40px rgba(95,212,255,0.08), inset 0 0 40px rgba(63,232,224,0.04)}
+.dash-empty-text{position:relative;z-index:2;font-size:13px;color:#9d8fc7;margin-bottom:26px;line-height:1.7}
+.dash-cta{position:relative;z-index:2;display:inline-block;font-family:'Space Mono',monospace;font-size:12px;color:#0A0620;background:linear-gradient(90deg,var(--dash-mag),var(--dash-cyan));letter-spacing:0.08em;padding:15px 30px;text-decoration:none;font-weight:700;transition:all .25s;box-shadow:0 0 25px rgba(95,212,255,0.4)}
+.dash-cta:hover{box-shadow:0 0 40px rgba(95,212,255,0.7);transform:translateY(-1px)}
+
+.radar-sweep{position:absolute;top:50%;left:50%;width:220px;height:220px;transform:translate(-50%,-50%);pointer-events:none;opacity:0.5}
+.radar-ring{position:absolute;inset:0;border:1px solid rgba(63,232,224,0.25);border-radius:50%}
+.radar-ring.r2{inset:28px}
+.radar-ring.r3{inset:56px}
+.radar-sweep-arm{position:absolute;top:50%;left:50%;width:50%;height:1px;background:linear-gradient(90deg, rgba(95,212,255,0.9), transparent);transform-origin:left center;animation:radarspin 4s linear infinite}
+@keyframes radarspin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+.mission-card{position:relative;border:1px solid rgba(95,212,255,0.25);background:linear-gradient(160deg, rgba(18,10,50,0.7), rgba(10,6,32,0.5));padding:18px 20px;margin-bottom:14px;box-shadow:0 0 20px rgba(95,212,255,0.06)}
+.mission-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.mission-card-title{font-size:13px;color:#fff}
+.mission-status{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.08em;text-transform:uppercase;color:var(--dash-gold);border:1px solid var(--dash-gold);padding:3px 9px;text-shadow:0 0 6px rgba(245,197,66,0.5);box-shadow:0 0 10px rgba(245,197,66,0.15)}
+.mission-card-sub{font-family:'Space Mono',monospace;font-size:10px;color:var(--dash-cyan);opacity:0.8}
+
+.settings-row{position:relative;z-index:2;display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-bottom:1px solid rgba(95,212,255,0.15);max-width:500px}
+.settings-label{font-family:'Space Mono',monospace;font-size:10px;color:var(--dash-dim);letter-spacing:0.06em}
+.settings-val{font-family:'Space Mono',monospace;font-size:12px;color:var(--dash-cyan)}
+
+.dash-logout{font-family:'Space Mono',monospace;font-size:9px;color:var(--dash-dim);letter-spacing:0.06em;cursor:pointer;transition:color .2s;text-transform:uppercase}
+.dash-logout:hover{color:var(--dash-gold)}
+
+.dash-inline-link{font-family:'Space Mono',monospace;font-size:10px;color:var(--dash-cyan);text-decoration:none;border-bottom:1px solid rgba(95,212,255,0.4);padding-bottom:1px}
+.dash-inline-link:hover{border-color:var(--dash-cyan)}
+
+.message-item{position:relative;z-index:2;display:flex;gap:12px;align-items:flex-start;padding:16px 0;border-bottom:1px solid rgba(95,212,255,0.12)}
+.message-dot{width:7px;height:7px;border-radius:50%;background:var(--dash-cyan);box-shadow:0 0 8px var(--dash-cyan);margin-top:5px;flex-shrink:0}
+.message-dot.read{background:var(--dash-dim);box-shadow:none}
+.message-text{font-size:13px;color:#dce8f5;line-height:1.5}
+.message-time{font-family:'Space Mono',monospace;font-size:9px;color:var(--dash-dim);margin-top:3px}
+
+.offline-banner{position:relative;z-index:2;display:inline-block;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.08em;color:#E05A5A;border:1px solid #E05A5A;padding:6px 14px;text-shadow:0 0 6px rgba(224,90,90,0.4)}
+.chat-mode-row{display:flex;gap:8px;margin-top:14px}
+.chat-mode-badge{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.08em;color:#E05A5A;border:1px solid #E05A5A;padding:4px 12px;font-weight:700}
+
+.contact-item{position:relative;z-index:2;display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid rgba(95,212,255,0.12);cursor:pointer;transition:opacity .15s}
+.contact-item:hover{opacity:0.75}
+.contact-avatar{width:36px;height:36px;border-radius:50%;background:rgba(95,212,255,0.12);border:1px solid rgba(95,212,255,0.3);display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:11px;color:var(--dash-cyan);flex-shrink:0}
+.contact-name{font-size:13px;color:#dce8f5}
+.contact-preview{font-family:'Space Mono',monospace;font-size:9px;color:var(--dash-dim);margin-top:2px}
+.chat-result{font-family:'Space Mono',monospace;font-size:10px;color:#E05A5A;margin-top:16px;min-height:14px}
+
+.toggle-switch{width:36px;height:20px;border-radius:10px;background:rgba(74,107,140,0.4);position:relative;cursor:pointer;transition:background .2s}
+.toggle-switch.active{background:var(--dash-cyan)}
+.toggle-knob{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s}
+.toggle-switch.active .toggle-knob{left:18px}
+
+.settings-action-row{position:relative;z-index:2;display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-bottom:1px solid rgba(95,212,255,0.12);max-width:500px;gap:16px}
+.settings-action-title{font-size:13px;color:#dce8f5}
+.settings-action-sub{font-family:'Space Mono',monospace;font-size:9px;color:var(--dash-cyan);margin-top:4px;min-height:11px}
+
+@media(max-width:600px){
+  .wrap{padding:40px 16px}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ APPLICATION FORM ══════════════ -->
+<div class="view active" id="view-apply">
+  <div class="nav">
+    <span class="nav-back" onclick="window.location.href='nasaat_platform.html'">&larr; back to platform</span>
+    <span class="nav-title">APPLICATION</span>
+  </div>
+  <div class="wrap">
+    <div class="form-title">Apply for a drone and mission</div>
+    <div class="form-sub">Nasaat carriers are available to individuals and groups for personal or collaborative deep-space observation.</div>
+
+    <div class="field-group">
+      <label class="field-label">Handle or designation</label>
+      <input type="text" class="field-input" id="apply-handle" readonly>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Passphrase</label>
+      <input type="password" class="field-input" id="apply-pass" readonly>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Mission brief</label>
+      <textarea class="field-input" id="apply-brief" placeholder="target, rationale, expected duration..."></textarea>
+    </div>
+
+    <button class="btn-solid" onclick="submitApplication()">Submit application</button>
+  </div>
+</div>
+
+<!-- ══════════════ ACCOUNT EXISTS ══════════════ -->
+<div class="view" id="view-exists">
+  <div class="nav">
+    <span class="nav-back" onclick="showView('apply')">&larr; back</span>
+    <span class="nav-title">APPLICATION</span>
+  </div>
+  <div class="wrap">
+    <div class="exists-box">
+      <div class="exists-title">DESIGNATION ALREADY ON RECORD</div>
+      <div class="exists-sub">A profile matching this designation already exists in the network. Please log in instead.</div>
+      <button class="btn-ghost" onclick="goToLogin()">Log in instead</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ LOGIN ══════════════ -->
+<div class="view" id="view-login">
+  <div class="nav">
+    <span class="nav-back" onclick="window.location.href='nasaat_platform.html'">&larr; back to platform</span>
+    <span class="nav-title">LOG IN</span>
+  </div>
+  <div class="wrap">
+    <div class="form-title">Log in to your Nasaat account</div>
+    <div class="form-sub">Track your drones, manage subscriptions, and submit report requests across the network.</div>
+
+    <div class="field-group">
+      <label class="field-label">Handle or designation</label>
+      <input type="text" class="field-input" id="login-handle" readonly>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Passphrase</label>
+      <input type="password" class="field-input" id="login-pass" readonly>
+    </div>
+
+    <button class="btn-solid" onclick="submitLogin()">Log in</button>
+  </div>
+</div>
+
+<!-- ══════════════ VERIFYING TRANSITION ══════════════ -->
+<div class="view" id="view-verifying">
+  <div class="verify-wrap">
+    <div class="verify-log" id="verify-log"></div>
+  </div>
+</div>
+
+<!-- ══════════════ DASHBOARD ══════════════ -->
+<div class="view" id="view-dashboard">
+  <canvas id="dash-starfield"></canvas>
+  <div class="dash-nav">
+    <span class="dash-nav-title">NASAAT &middot; ACCOUNT</span>
+    <div style="display:flex;align-items:center;gap:16px">
+      <span class="dash-nav-user" id="dash-user-label">designation</span>
+      <span class="dash-logout" onclick="logout()">log out</span>
+    </div>
+  </div>
+  <div class="dash-tabs">
+    <div class="dash-tab active" onclick="setDashTab('missions',this)">Missions</div>
+    <div class="dash-tab" onclick="setDashTab('reports',this)">Field Reports</div>
+    <div class="dash-tab" onclick="setDashTab('messages',this)">Messages</div>
+    <div class="dash-tab" onclick="setDashTab('notifications',this)">Notifications</div>
+    <div class="dash-tab" onclick="setDashTab('groups',this)">Groups</div>
+    <div class="dash-tab" onclick="setDashTab('subs',this)">Subscriptions</div>
+    <div class="dash-tab" onclick="setDashTab('requests',this)">Report Requests</div>
+    <div class="dash-tab" onclick="setDashTab('settings',this)">Account Settings</div>
+  </div>
+
+  <div class="dash-panel active" id="dash-missions">
+    <div class="dash-panel-title">Missions</div>
+
+    <div class="dash-subheading">Following</div>
+    <div class="mission-card">
+      <div class="mission-card-top">
+        <div class="mission-card-title">Rogue planet survey &mdash; NT-3184v1</div>
+        <div class="mission-status" style="color:var(--dash-cyan);border-color:var(--dash-cyan)">active</div>
+      </div>
+      <div class="mission-card-sub">drone: TYPE 4HDUWE-89229 &middot; system-default configuration</div>
+      <div style="margin-top:10px"><a href="#" onclick="openReportWindow('nasaat_report_001_v2_rendered.html');return false;" class="dash-inline-link">view field report &rarr;</a></div>
+    </div>
+    <div class="mission-card">
+      <div class="mission-card-top">
+        <div class="mission-card-title">Dark matter precipitation survey &mdash; DM-0791v1</div>
+        <div class="mission-status" style="color:var(--dash-cyan);border-color:var(--dash-cyan)">active</div>
+      </div>
+      <div class="mission-card-sub">drone: DM-0791 carrier &middot; independently submitted design</div>
+      <div style="margin-top:10px"><a href="#" onclick="openReportWindow('nasaat_report_002_final.html');return false;" class="dash-inline-link">view field report &rarr;</a></div>
+    </div>
+
+    <div class="dash-subheading" style="margin-top:30px">My Missions</div>
+    <div id="missions-list"></div>
+    <div id="new-mission-form" style="display:none;margin-top:16px">
+      <textarea class="field-input" id="new-mission-brief" placeholder="target, rationale, expected duration..." style="min-height:70px;font-family:'IBM Plex Sans',sans-serif"></textarea>
+      <button class="dash-cta" style="font-size:11px;padding:11px 22px;margin-top:10px;border:none" onclick="submitNewMission()">Submit &amp; design drone &rarr;</button>
+    </div>
+    <div style="margin-top:16px" id="new-mission-btn-row">
+      <button class="btn-ghost" style="width:auto;padding:10px 20px;margin:0" onclick="showNewMissionForm()">+ New Mission</button>
+    </div>
+  </div>
+
+  <div class="dash-panel" id="dash-reports">
+    <div class="dash-panel-title">Field Reports</div>
+    <div class="dash-subheading">Saved</div>
+    <div class="mission-card">
+      <div class="mission-card-top">
+        <div class="mission-card-title">NT-3184v1 &mdash; rogue planet</div>
+      </div>
+      <div class="mission-card-sub">field transmission &middot; isotopic analysis, chemistry, trajectory</div>
+      <div style="margin-top:10px"><span class="dash-inline-link" onclick="openReportWindow('nasaat_report_001_v2_rendered.html')" style="cursor:pointer">open report &rarr;</span></div>
+    </div>
+    <div class="mission-card">
+      <div class="mission-card-top">
+        <div class="mission-card-title">DM-0791v1 &mdash; HD 206893 B</div>
+      </div>
+      <div class="mission-card-sub">field transmission &middot; dark matter precipitation, composition</div>
+      <div style="margin-top:10px"><span class="dash-inline-link" onclick="openReportWindow('nasaat_report_002_final.html')" style="cursor:pointer">open report &rarr;</span></div>
+    </div>
+  </div>
+
+  <div class="dash-panel" id="dash-messages">
+    <div class="dash-panel-title">Messages</div>
+    <div class="offline-banner">MESSAGING IS OFFLINE</div>
+    <div class="chat-mode-row">
+      <span class="chat-mode-badge">VIDEO</span>
+      <span class="chat-mode-badge">VOICE</span>
+      <span class="chat-mode-badge">TEXT</span>
+    </div>
+
+    <div class="dash-subheading" style="margin-top:26px">Contacts</div>
+    <div class="contact-item" onclick="tryChatOpen()">
+      <div class="contact-avatar">AO</div>
+      <div class="contact-info">
+        <div class="contact-name">A. Okafor-5510</div>
+        <div class="contact-preview">last message unavailable</div>
+      </div>
+    </div>
+    <div class="contact-item" onclick="tryChatOpen()">
+      <div class="contact-avatar">YT</div>
+      <div class="contact-info">
+        <div class="contact-name">Y. Tanaka-3387</div>
+        <div class="contact-preview">last message unavailable</div>
+      </div>
+    </div>
+    <div class="contact-item" onclick="tryChatOpen()">
+      <div class="contact-avatar">DM</div>
+      <div class="contact-info">
+        <div class="contact-name">Dark Matters Group</div>
+        <div class="contact-preview">last message unavailable</div>
+      </div>
+    </div>
+    <div class="chat-result" id="chat-result"></div>
+  </div>
+
+  <div class="dash-panel" id="dash-notifications">
+    <div class="dash-panel-title">Notifications</div>
+    <div class="message-item">
+      <div class="message-dot"></div>
+      <div><div class="message-text">Isotopic analysis added to NT-3184v1 field report.</div><div class="message-time">recent</div></div>
+    </div>
+    <div class="message-item">
+      <div class="message-dot"></div>
+      <div><div class="message-text">New message from A. Okafor-5510.</div><div class="message-time">recent</div></div>
+    </div>
+    <div class="message-item">
+      <div class="message-dot"></div>
+      <div><div class="message-text">Calibration complete &mdash; TYPE 4HDUWE-89229.</div><div class="message-time">recent</div></div>
+    </div>
+    <div class="message-item">
+      <div class="message-dot read"></div>
+      <div><div class="message-text">Candidate signal flagged for review &mdash; DM-0791v1.</div><div class="message-time">earlier</div></div>
+    </div>
+    <div class="message-item">
+      <div class="message-dot read"></div>
+      <div><div class="message-text">New post from Dark Matters Group: "Notes on precipitation timescales."</div><div class="message-time">earlier</div></div>
+    </div>
+    <div class="message-item">
+      <div class="message-dot read"></div>
+      <div><div class="message-text">Network news: ingestion pace unchanged this cycle.</div><div class="message-time">earlier</div></div>
+    </div>
+  </div>
+
+  <div class="dash-panel" id="dash-groups">
+    <div class="dash-panel-title">Groups</div>
+    <div class="dash-subheading">My Groups</div>
+    <div class="mission-card">
+      <div class="mission-card-top">
+        <div class="mission-card-title">Dark Matters Group</div>
+        <div class="mission-status" style="color:var(--dash-cyan);border-color:var(--dash-cyan)">member</div>
+      </div>
+      <div class="mission-card-sub">independent research group &middot; submitted DM-0791 carrier design</div>
+    </div>
+
+    <div class="dash-subheading" style="margin-top:26px">Following</div>
+    <div class="mission-card">
+      <div class="mission-card-top">
+        <div class="mission-card-title">Rogue Body Watch</div>
+        <div class="mission-status" style="color:var(--dash-dim);border-color:var(--dash-dim)">following</div>
+      </div>
+      <div class="mission-card-sub">informal network &middot; tracks free-floating body candidates</div>
+    </div>
+
+    <div style="margin-top:18px">
+      <button class="btn-ghost" style="max-width:260px" onclick="tryFeature(this,'Group directory not available at this access tier.')">Browse other groups</button>
+    </div>
+  </div>
+
+  <div class="dash-panel" id="dash-subs">
+    <div class="dash-panel-title">Subscriptions</div>
+    <div class="dash-subheading">Blogs &amp; news channels</div>
+    <div class="mission-card">
+      <div class="mission-card-top">
+        <div class="mission-card-title">Dark Matters Group &mdash; Blog</div>
+      </div>
+      <div class="mission-card-sub">field notes and precipitation analysis, posted irregularly</div>
+    </div>
+    <div class="mission-card">
+      <div class="mission-card-top">
+        <div class="mission-card-title">Nasaat Network News</div>
+      </div>
+      <div class="mission-card-sub">network-wide updates &middot; ingestion status, new drones, calibration notes</div>
+    </div>
+  </div>
+
+  <div class="dash-panel" id="dash-requests">
+    <div class="dash-panel-title">Report Requests</div>
+    <div id="requests-list"></div>
+  </div>
+
+  <div class="dash-panel" id="dash-settings">
+    <div class="dash-panel-title">Account Settings</div>
+    <div class="settings-row"><span class="settings-label">DESIGNATION</span><span class="settings-val" id="settings-handle">&mdash;</span></div>
+    <div class="settings-row"><span class="settings-label">PASSPHRASE</span><span class="settings-val">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</span></div>
+    <div class="settings-row">
+      <span class="settings-label">MISSION NOTIFICATIONS</span>
+      <div class="toggle-switch active" id="toggle-notif" onclick="toggleSwitch(this)"><div class="toggle-knob"></div></div>
+    </div>
+    <div class="settings-action-row">
+      <div>
+        <div class="settings-action-title">Request passphrase reset</div>
+        <div class="settings-action-sub" id="reset-result"></div>
+      </div>
+      <button class="btn-ghost" style="width:auto;padding:9px 18px;margin:0" onclick="requestPassReset(this)">Send reset</button>
+    </div>
+    <div class="settings-action-row">
+      <div>
+        <div class="settings-action-title" style="color:var(--dash-gold)">Delete account</div>
+        <div class="settings-action-sub" id="delete-result"></div>
+      </div>
+      <button class="btn-ghost" style="width:auto;padding:9px 18px;margin:0;color:var(--dash-gold);border-color:var(--dash-gold)" onclick="tryFeature(this,'Not available at this access tier.', 'delete-result')">Delete</button>
+    </div>
+  </div>
+
+  <div class="report-modal-overlay" id="report-modal-overlay">
+    <div class="report-modal-box">
+      <span class="report-modal-close" onclick="closeReportWindow()">close &times;</span>
+      <iframe id="report-modal-iframe" src="about:blank"></iframe>
+    </div>
+  </div>
+</div>
+
+<script>
+// Recovered fragment identities — echo the naming pattern of the five named
+// Settling-era philosophers already established in the archive, without
+// claiming to be them. The system cannot tell a new visitor from a fragment.
+const fragmentIdentities = ['M. Voss-2298','A. Okafor-5510','Y. Tanaka-3387','S. Halvorsen-9042','K.-7719'];
+let currentFragment = null;
+let pendingMission = null;
+let pendingReportRequest = null;
+
+const reportRequestNames = {
+  'NT-3184': 'Rogue planet survey &mdash; NT-3184v1',
+  'DM-0791': 'Dark matter precipitation survey &mdash; DM-0791v1'
+};
+
+function showView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  window.scrollTo({top:0});
+}
+
+function prefillIdentity(handleId, passId){
+  if(!currentFragment){
+    currentFragment = fragmentIdentities[Math.floor(Math.random()*fragmentIdentities.length)];
+  }
+  const handleEl = document.getElementById(handleId);
+  const passEl = document.getElementById(passId);
+  setTimeout(()=>{
+    handleEl.value = currentFragment;
+    passEl.value = '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022';
+    handleEl.classList.add('prefilled');
+    passEl.classList.add('prefilled');
+  }, 250);
+}
+
+// a report's request-verification modal links here with ?request=<id>#login
+const urlParams = new URLSearchParams(window.location.search);
+if(urlParams.get('request')){
+  pendingReportRequest = urlParams.get('request');
+}
+
+// prefill on load
+// arriving via #login jumps straight to the login view instead of the application form
+if(window.location.hash === '#login'){
+  showView('login');
+  prefillIdentity('login-handle','login-pass');
+} else {
+  prefillIdentity('apply-handle','apply-pass');
+}
+
+function submitApplication(){
+  pendingMission = document.getElementById('apply-brief').value.trim() || 'unspecified target';
+  showView('exists');
+}
+
+function goToLogin(){
+  showView('login');
+  prefillIdentity('login-handle','login-pass');
+}
+
+function submitLogin(){
+  showView('verifying');
+  const logEl = document.getElementById('verify-log');
+  logEl.innerHTML = '';
+  const steps = ['verifying credentials...', 'reconstructing session...', 'session restored'];
+  let i=0;
+  function next(){
+    if(i>=steps.length){
+      setTimeout(enterDashboard, 500);
+      return;
+    }
+    const div=document.createElement('div');
+    div.textContent = steps[i];
+    logEl.appendChild(div);
+    i++;
+    setTimeout(next, 650);
+  }
+  next();
+}
+
+function renderMissionsList(){
+  const missionsList = document.getElementById('missions-list');
+  if(pendingMission){
+    missionsList.innerHTML = `
+      <div class="mission-card">
+        <div class="mission-card-top">
+          <div class="mission-card-title">${escapeHtml(pendingMission)}</div>
+          <div class="mission-status">pending</div>
+        </div>
+        <div class="mission-card-sub">drone: not yet assigned &middot; carrier allocation not yet assigned</div>
+      </div>`;
+  } else {
+    missionsList.innerHTML = '<div class="dash-empty"><div class="dash-empty-text">No missions submitted yet.</div></div>';
+  }
+}
+
+function renderRequestsList(){
+  const listEl = document.getElementById('requests-list');
+  if(pendingReportRequest){
+    const label = reportRequestNames[pendingReportRequest] || pendingReportRequest;
+    listEl.innerHTML = `
+      <div class="mission-card" id="request-card">
+        <div class="mission-card-top">
+          <div class="mission-card-title">${label}</div>
+          <div class="mission-status" id="request-status">pending verification</div>
+        </div>
+        <div class="mission-card-sub">requested from field report &middot; awaiting confirmation</div>
+        <div style="margin-top:10px">
+          <button class="btn-ghost" style="width:auto;padding:8px 18px;margin:0" id="request-confirm-btn" onclick="confirmReportRequest()">Confirm</button>
+        </div>
+      </div>`;
+  } else {
+    listEl.innerHTML = '<div class="dash-empty"><div class="dash-empty-text">No report requests submitted yet.</div></div>';
+  }
+}
+
+function confirmReportRequest(){
+  const status = document.getElementById('request-status');
+  const btn = document.getElementById('request-confirm-btn');
+  status.textContent = 'confirmed';
+  status.style.color = 'var(--dash-cyan)';
+  status.style.borderColor = 'var(--dash-cyan)';
+  btn.disabled = true;
+  btn.textContent = 'Confirmed';
+}
+
+function enterDashboard(){
+  document.getElementById('dash-user-label').textContent = currentFragment || 'designation unresolved';
+  document.getElementById('settings-handle').textContent = currentFragment || '\u2014';
+  renderMissionsList();
+  renderRequestsList();
+  showView('dashboard');
+  initDashStarfield();
+
+  if(pendingReportRequest){
+    const requestsTabBtn = document.querySelector('.dash-tab[onclick*="requests"]');
+    if(requestsTabBtn) setDashTab('requests', requestsTabBtn);
+  }
+}
+
+// ═══ Dashboard starfield — procedural, seeded per session, twinkling ═══
+let starfieldStars = [];
+let starfieldAnimating = false;
+function initDashStarfield(){
+  const cv = document.getElementById('dash-starfield');
+  const ctx = cv.getContext('2d');
+  cv.width = window.innerWidth;
+  cv.height = window.innerHeight;
+
+  if(starfieldStars.length === 0){
+    const count = Math.floor((cv.width * cv.height) / 3800);
+    for(let i=0;i<count;i++){
+      starfieldStars.push({
+        x: Math.random()*cv.width,
+        y: Math.random()*cv.height,
+        r: Math.random()*1.3 + 0.3,
+        baseAlpha: Math.random()*0.5 + 0.25,
+        phase: Math.random()*Math.PI*2,
+        speed: Math.random()*0.02 + 0.008,
+        hue: Math.random() < 0.15 ? (Math.random()<0.5 ? '95,212,255' : '63,232,224') : '255,255,255'
+      });
+    }
+  }
+
+  if(!starfieldAnimating){
+    starfieldAnimating = true;
+    let t = 0;
+    function draw(){
+      if(!document.getElementById('view-dashboard').classList.contains('active')){
+        starfieldAnimating = false;
+        return;
+      }
+      ctx.clearRect(0,0,cv.width,cv.height);
+      t += 1;
+      starfieldStars.forEach(s=>{
+        const twinkle = Math.sin(t*s.speed + s.phase)*0.35 + 0.65;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(${s.hue},${(s.baseAlpha*twinkle).toFixed(2)})`;
+        ctx.fill();
+      });
+      requestAnimationFrame(draw);
+    }
+    draw();
+  }
+}
+window.addEventListener('resize', ()=>{
+  const cv = document.getElementById('dash-starfield');
+  if(cv){ cv.width = window.innerWidth; cv.height = window.innerHeight; }
+});
+
+function escapeHtml(str){
+  return String(str).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+}
+
+function setDashTab(tab, btn){
+  document.querySelectorAll('.dash-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.dash-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('dash-'+tab).classList.add('active');
+}
+
+function logout(){
+  window.location.href = 'nasaat_platform.html';
+}
+
+// Some settings genuinely work (visible, real state change); others don't — a
+// small honest response is shown either way, consistent with "some parts of
+// the reconstruction work, some don't" throughout the rest of the archive.
+function tryFeature(btn, message, targetId){
+  const target = targetId ? document.getElementById(targetId) : btn.parentElement.querySelector('.settings-action-sub');
+  if(target){
+    target.textContent = message;
+  }
+}
+
+function requestPassReset(btn){
+  const target = document.getElementById('reset-result');
+  target.textContent = 'Reset instructions sent to designation on file.';
+}
+
+function toggleSwitch(el){
+  el.classList.toggle('active');
+}
+
+// Field reports open inside a window on this page, rather than navigating away —
+// the report pages themselves have no "back to account" link, by design, so this
+// keeps the account context intact without needing to add one there.
+function openReportWindow(url){
+  document.getElementById('report-modal-iframe').src = url;
+  document.getElementById('report-modal-overlay').classList.add('shown');
+}
+function closeReportWindow(){
+  document.getElementById('report-modal-overlay').classList.remove('shown');
+  document.getElementById('report-modal-iframe').src = 'about:blank';
+}
+
+function showNewMissionForm(){
+  document.getElementById('new-mission-form').style.display = 'block';
+  document.getElementById('new-mission-btn-row').style.display = 'none';
+}
+
+function submitNewMission(){
+  const brief = document.getElementById('new-mission-brief').value.trim() || 'unspecified target';
+  pendingMission = brief;
+  renderMissionsList();
+  window.location.href = 'nasaat_drone_commission.html';
+}
+
+function tryChatOpen(){
+  document.getElementById('chat-result').textContent = 'Messaging is offline. Video, voice, and text channels are unavailable at this access tier.';
+}
+</script>
+</body>
+</html>

@@ -136,6 +136,17 @@ input.spec-range::-webkit-slider-thumb{appearance:none;width:14px;height:14px;bo
 .req-submit{background:rgba(79,195,247,0.08);border:1px solid var(--data);color:var(--data);font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.1em;padding:9px;width:100%;text-transform:uppercase;transition:all .2s}
 .req-submit:hover{background:rgba(79,195,247,0.15)}
 .req-confirm{background:rgba(74,222,128,0.06);border:1px solid var(--green);color:var(--green);font-family:'Space Mono',monospace;font-size:9px;padding:9px 11px;line-height:1.6;display:none}
+
+.verify-overlay{display:none;position:fixed;inset:0;background:rgba(2,4,8,0.85);z-index:1000;align-items:center;justify-content:center;padding:20px}
+.verify-overlay.shown{display:flex}
+.verify-box{max-width:380px;width:100%;background:var(--panel);border:1px solid var(--border);padding:28px 24px;text-align:center}
+.verify-box-title{font-family:'Space Mono',monospace;font-size:11px;color:var(--data);letter-spacing:0.06em;margin-bottom:10px}
+.verify-box-sub{font-size:12px;color:var(--dim);line-height:1.7;margin-bottom:22px}
+.verify-box-btn{width:100%;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.05em;padding:12px;margin-bottom:8px;transition:all .2s}
+.verify-box-btn.primary{background:var(--data);color:#04141f;font-weight:700;border:none}
+.verify-box-btn.primary:hover{opacity:0.9}
+.verify-box-btn.ghost{background:none;border:1px solid var(--border);color:var(--data)}
+.verify-box-btn.ghost:hover{border-color:var(--data)}
 .req-recent{border-top:1px solid var(--border);padding-top:10px}
 .req-recent-title{font-family:'Space Mono',monospace;font-size:7px;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:7px}
 .req-item{padding:5px 0;border-bottom:1px solid var(--border2);display:flex;justify-content:space-between;gap:8px}
@@ -1145,7 +1156,11 @@ function setTab(tab,btn){
 
 function submitRequest(){
   const c=document.getElementById('req-confirm');
-  c.style.display='block';setTimeout(()=>{c.style.display='none';},4000);
+  c.style.display='block';
+  setTimeout(()=>{
+    c.style.display='none';
+    document.getElementById('verify-overlay').classList.add('shown');
+  },4000);
 }
 
 function toggleFullscreen(){
@@ -1165,5 +1180,14 @@ document.addEventListener('fullscreenchange', ()=>{
   resizeCamCanvas();
 });
 </script>
+<div class="verify-overlay" id="verify-overlay">
+  <div class="verify-box">
+    <div class="verify-box-title">VERIFICATION REQUIRED</div>
+    <div class="verify-box-sub">Tracking this request requires an account. You can log in, continue viewing without tracking it, or return to the platform.</div>
+    <button class="verify-box-btn primary" onclick="window.location.href='nasaat_account.html?request=NT-3184#login'">Log in</button>
+    <button class="verify-box-btn ghost" onclick="document.getElementById('verify-overlay').classList.remove('shown')">Continue viewing</button>
+    <button class="verify-box-btn ghost" onclick="window.location.href='nasaat_platform.html'">Return to platform</button>
+  </div>
+</div>
 </body>
 </html>
