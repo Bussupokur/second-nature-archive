@@ -854,13 +854,18 @@ function doTranslate(){
       .then(raw=>{
         const {meta,body}=parseFrontmatter(raw);
         const cleanBody=stripLegacyHeader(body);
-        status.textContent='resolved \u00b7 fidelity '+recordFidelity(currentRecord.id)+'%';
-        document.getElementById('translated-eyebrow').textContent=`Record ${idDisplay} \u00b7 ${meta.cls||currentRecord.cls}`;
-        document.getElementById('translated-title').textContent=meta.title||currentRecord.title;
-        document.getElementById('translated-body').innerHTML=marked.parse(cleanBody);
-        document.getElementById('translated-panel').classList.add('shown');
-        animateGauges(currentRecord.id);
-        scheduleWaver();
+        const wordCount=cleanBody.trim().split(/\s+/).filter(w=>w.length>0).length;
+        const readingMinutes=Math.max(1,Math.round(wordCount/220));
+
+        countUpReadingTime(status, readingMinutes, ()=>{
+          status.textContent='resolved \u00b7 fidelity '+recordFidelity(currentRecord.id)+'%'+' \u00b7 reading time '+readingMinutes+' min';
+          document.getElementById('translated-eyebrow').textContent=`Record ${idDisplay} \u00b7 ${meta.cls||currentRecord.cls}`;
+          document.getElementById('translated-title').textContent=meta.title||currentRecord.title;
+          document.getElementById('translated-body').innerHTML=marked.parse(cleanBody);
+          document.getElementById('translated-panel').classList.add('shown');
+          animateGauges(currentRecord.id);
+          scheduleWaver();
+        });
       })
       .catch(()=>{
         status.textContent='unresolved \u2014 source file unreachable';
@@ -870,6 +875,21 @@ function doTranslate(){
         document.getElementById('translated-panel').classList.add('shown');
       });
   });
+}
+
+// ═══ Live word-count-based reading time — counts up to the real calculated value ═══
+function countUpReadingTime(statusEl, finalMinutes, onDone){
+  let current=0;
+  const stepCount=Math.min(finalMinutes,8);
+  const increment=Math.max(1,Math.round(finalMinutes/stepCount));
+  const tick=setInterval(()=>{
+    current=Math.min(finalMinutes,current+increment);
+    statusEl.textContent='estimating reading time... '+current+' min';
+    if(current>=finalMinutes){
+      clearInterval(tick);
+      setTimeout(onDone,300);
+    }
+  },90);
 }
 
 // ═══ Reasoning trace — plays a brief sequence of status lines before content resolves ═══
