@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARCHIVE — record access</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=IBM+Plex+Serif:wght@400;500&family=IBM+Plex+Sans:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--space:#060A12;--panel:#0A121F;--panel2:#0D1A2B;
+--border:#203752;--border2:#16283D;
+--data:#5FAAC9;--body:#AEC2D6;--symbol:#7DBBD6;
+--dim:#5A7691;--white:#D5E4F0;--faint:#233B54;
+--note:#D4C9A8;--warn:#C85B4A;--rss:#E8954A;--active:#4ADE80;
+}
+html{background:var(--space);color:var(--body);font-family:'Space Mono',monospace;font-size:15px}
+body{min-height:100vh}
+a{color:inherit}
+button{cursor:pointer;font-family:'Space Mono',monospace;border:none;background:none}
+.view{display:none}
+.view.active{display:block}
+::selection{background:rgba(61,143,176,0.25)}
+
+/* ═══ BOOT SEQUENCE — plays fresh on every visit, live counts from manifest ═══ */
+.boot-wrap{max-width:640px;margin:0 auto;padding:60px 18px}
+.boot-row{margin-bottom:22px}
+.boot-row-label{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.04em;margin-bottom:7px}
+.boot-row-label span:last-child{color:var(--symbol)}
+.boot-bar-track{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.boot-bar-fill{height:100%;background:var(--symbol);width:0%;border-radius:2px;transition:width .25s linear}
+.boot-tech-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;margin:32px 0 40px;padding-top:20px;border-top:1px solid var(--border2)}
+.boot-tech-item{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:0.03em}
+.boot-tech-item span:last-child{color:var(--dim)}
+.boot-tech-item span:last-child.ok{color:var(--symbol)}
+.boot-countdown{text-align:center;font-family:'Space Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:0.06em;min-height:20px}
+.boot-countdown strong{color:var(--symbol);font-size:14px}
+
+.boot-log{margin-bottom:28px;min-height:170px}
+.boot-log-line{font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);line-height:2;opacity:0;animation:fadeinlog .4s forwards}
+.boot-log-line .ok{color:var(--symbol);margin-left:6px}
+@keyframes fadeinlog{to{opacity:1}}
+
+.boot-reject-row{text-align:center;margin-top:8px}
+.boot-reject{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:0.06em;cursor:pointer;opacity:0.5;transition:opacity .2s}
+.boot-reject:hover{opacity:1;color:var(--warn)}
+
+.boot-error{text-align:center;display:none;padding-top:40px}
+.boot-error.shown{display:block}
+.boot-error-text{font-family:'Space Mono',monospace;font-size:32px;letter-spacing:0.1em;color:var(--warn)}
+.boot-error-sub{font-family:'Space Mono',monospace;font-size:11px;color:var(--dim);margin-top:14px;letter-spacing:0.05em}
+
+.status-badge{display:inline-flex;align-items:center;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.08em;border:1px solid currentColor;padding:2px 7px;margin-left:8px;text-decoration:none;font-weight:700}
+.status-badge:hover{opacity:0.75}
+.sb-red{color:var(--warn)}
+.sb-orange{color:var(--rss)}
+.sb-green{color:var(--active);animation:rssflash 3.4s infinite}
+@keyframes rssflash{0%,100%{opacity:1}50%{opacity:.45}}
+
+/* SYSTEM BAR */
+.sysbar{display:flex;justify-content:space-between;align-items:center;padding:10px 18px;border-bottom:1px solid var(--border);font-size:11px;color:var(--dim);letter-spacing:0.05em;flex-wrap:wrap;gap:6px}
+.sysbar-id{color:var(--symbol)}
+
+/* TOP — no hero, just a query line */
+.query-block{border-bottom:1px solid var(--border);padding:22px 18px}
+.query-line{display:flex;align-items:center;gap:10px;max-width:900px;margin:0 auto}
+.query-prompt{color:var(--symbol);font-size:16px}
+.query-input{flex:1;background:none;border:none;border-bottom:1px solid var(--dim);color:var(--white);font-family:'Space Mono',monospace;font-size:15px;padding:8px 4px;outline:none}
+.query-input:focus{border-bottom-color:var(--symbol)}
+.query-input::placeholder{color:var(--dim)}
+.query-meta{max-width:900px;margin:12px auto 0;font-size:11px;color:var(--dim);letter-spacing:0.03em}
+
+/* INDEX classification tabs */
+.class-tabs{max-width:900px;margin:0 auto;display:flex;gap:0;border-bottom:1px solid var(--border)}
+.class-tab{font-size:11px;letter-spacing:0.06em;text-transform:uppercase;padding:11px 14px;color:var(--dim);border-right:1px solid var(--border);cursor:pointer;transition:color .15s}
+.class-tab:hover{color:var(--symbol)}
+.class-tab.active{color:var(--symbol);background:rgba(61,143,176,0.05);border-bottom:1px solid var(--symbol);margin-bottom:-1px}
+
+/* MODE TOGGLE — sits after the last tab, same pulsing language as the RSS badge */
+.mode-toggle{font-size:11px;letter-spacing:0.06em;text-transform:uppercase;padding:11px 14px;color:var(--dim);cursor:pointer;transition:color .15s;margin-left:auto;animation:rssflash 3.4s infinite}
+.mode-toggle:hover{color:var(--white)}
+.mode-toggle.to-dark{color:#8B5FA8}
+.mode-toggle.to-main{color:var(--symbol)}
+
+/* GLITCH TRANSITION — brief full-screen stutter right before a mode-switch reboot */
+.mode-glitch{position:fixed;inset:0;background:#000;z-index:500;display:none;pointer-events:none}
+.mode-glitch.active{display:block}
+.mode-glitch-layer{position:absolute;inset:0;mix-blend-mode:screen}
+
+/* RECORD INDEX */
+.index-wrap{max-width:900px;margin:0 auto;padding:0}
+
+.aux-links{max-width:900px;margin:10px auto 0;display:flex;gap:18px;font-family:'Space Mono',monospace;font-size:10px;color:var(--symbol);letter-spacing:0.04em}
+.aux-links span{cursor:pointer;transition:opacity .2s;display:inline-flex;align-items:center;gap:6px}
+.aux-links span:hover{opacity:0.7}
+.aux-dot{width:5px;height:5px;border-radius:50%;background:var(--symbol);animation:blink 2.4s infinite;flex-shrink:0}
+
+.char-wrap{max-width:900px;margin:0 auto;padding:24px 18px 80px}
+.char-back{font-size:12px;color:var(--dim);cursor:pointer;letter-spacing:0.05em;display:inline-block;margin-bottom:20px}
+.char-back:hover{color:var(--symbol)}
+.char-head{margin-bottom:8px}
+.char-head-title{font-size:14px;color:var(--dim);letter-spacing:0.04em;margin-bottom:4px}
+.char-head-note{font-size:11px;color:var(--dim);line-height:1.7;margin-bottom:24px;max-width:560px}
+.char-card{border:1px solid var(--border);background:var(--panel2);padding:16px 18px;margin-bottom:12px}
+.char-card-top{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.char-name{font-size:14px;color:var(--white)}
+.char-name.unresolved{color:var(--dim);font-style:italic}
+.char-status{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:0.06em;text-transform:uppercase}
+.char-meta{font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);line-height:2;margin-bottom:8px}
+.char-meta .lbl{color:var(--dim);display:inline-block;min-width:110px}
+.char-refs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.char-ref-tag{font-family:'Space Mono',monospace;font-size:9px;color:var(--symbol);border:1px solid var(--border);padding:3px 8px;cursor:pointer;transition:all .15s}
+.char-ref-tag:hover{border-color:var(--symbol);background:rgba(79,195,247,0.06)}
+
+.tl-wrap{max-width:900px;margin:0 auto;padding:24px 18px 80px}
+.tl-back{font-size:12px;color:var(--dim);cursor:pointer;letter-spacing:0.05em;display:inline-block;margin-bottom:20px}
+.tl-back:hover{color:var(--symbol)}
+.tl-head-title{font-size:14px;color:var(--dim);letter-spacing:0.04em;margin-bottom:4px}
+.tl-head-note{font-size:11px;color:var(--dim);line-height:1.7;margin-bottom:32px;max-width:600px}
+.tl-bar-row{display:flex;align-items:stretch;height:56px;margin-bottom:6px}
+.tl-seg{position:relative;display:flex;align-items:center;justify-content:center;border-right:1px solid var(--space);cursor:pointer;transition:filter .2s;overflow:hidden}
+.tl-seg:hover{filter:brightness(1.3)}
+.tl-seg.active{filter:brightness(1.4)}
+.tl-seg span{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.05em;color:rgba(6,10,18,0.85);text-align:center;padding:0 6px;font-weight:700}
+.tl-gap{position:relative;flex:0 0 90px;background:repeating-linear-gradient(90deg,var(--border) 0 4px,transparent 4px 10px);display:flex;align-items:center;justify-content:center}
+.tl-marker{flex:0 0 14px;background:var(--symbol);position:relative;box-shadow:0 0 12px rgba(125,187,214,0.6)}
+.tl-marker-dot{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:8px;height:8px;border-radius:50%;background:var(--white);animation:blink 1.8s infinite}
+.tl-labels-row{display:flex;font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);letter-spacing:0.04em;margin-bottom:36px}
+.tl-label-item{text-align:center}
+.tl-note-block{border:1px solid var(--border);background:var(--panel2);padding:16px 18px;margin-bottom:24px}
+.tl-note-title{font-family:'Space Mono',monospace;font-size:10px;color:var(--symbol);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px}
+.tl-note-body{font-size:12px;color:var(--body);line-height:1.8;font-weight:300}
+.tl-confidence{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);margin-top:8px}
+.tl-access{text-align:center;font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);line-height:1.8;margin-top:8px}
+.tl-access strong{color:var(--symbol)}
+
+.gauge-row{display:flex;gap:28px;margin:20px 0 10px;flex-wrap:wrap}
+.gauge-item{display:flex;flex-direction:column;align-items:center;gap:6px;width:110px}
+.gauge-svg{width:64px;height:64px;transform:rotate(-90deg)}
+.gauge-track{fill:none;stroke:var(--border);stroke-width:5}
+.gauge-fill{fill:none;stroke:var(--symbol);stroke-width:5;stroke-linecap:round;stroke-dasharray:213.6;stroke-dashoffset:213.6;transition:stroke-dashoffset 1.6s cubic-bezier(.2,.7,.2,1)}
+.gauge-label{font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);letter-spacing:0.05em;text-align:center;line-height:1.4;text-transform:uppercase}
+.gauge-val{font-family:'Space Mono',monospace;font-size:13px;color:var(--symbol);font-weight:700}
+.gauge-caveat{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:0.03em;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border2)}
+
+@keyframes textwaver{0%,100%{opacity:1;letter-spacing:normal}50%{opacity:0.72;letter-spacing:0.5px}}
+.tw-flicker{animation:textwaver .32s ease}
+
+.tl-epoch-row{display:flex;align-items:stretch;height:34px;margin-bottom:4px}
+.tl-epoch-seg{position:relative;display:flex;align-items:center;justify-content:center;border-right:1px solid var(--space);cursor:pointer;transition:filter .2s;background:var(--faint)}
+.tl-epoch-seg:hover{filter:brightness(1.35)}
+.tl-epoch-seg.active{filter:brightness(1.5)}
+.tl-epoch-seg span{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.08em;color:var(--symbol);font-style:italic}
+.tl-epoch-gapspace{flex:0 0 104px}
+.tl-epoch-label{text-align:center;font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:14px}
+
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.sys-pulse{display:inline-flex;align-items:center;gap:6px}
+.sys-pulse-dot{width:5px;height:5px;border-radius:50%;background:var(--symbol);animation:blink 2.2s infinite}
+.sys-pulse-text{min-width:66px;display:inline-block}
+.sys-freq{color:var(--dim);opacity:0.7}
+
+.activity-ticker{max-width:900px;margin:8px auto 0;font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:0.03em;opacity:0.8;height:14px;overflow:hidden}
+
+.attest-block{max-width:900px;margin:14px auto 0}
+.attest-labels{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:5px}
+.attest-track{position:relative;height:3px;background:var(--border);border-radius:2px}
+.attest-marker{position:absolute;top:50%;width:7px;height:7px;border-radius:50%;background:var(--symbol);transform:translate(-50%,-50%);transition:left 2.2s ease-in-out;box-shadow:0 0 6px rgba(125,187,214,0.6)}
+.attest-status{font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);letter-spacing:0.03em;margin-top:6px;opacity:0.75;min-height:11px;transition:opacity .5s}
+
+.attest-block.compact{max-width:none;margin:0}
+.attest-block.compact .attest-labels{font-size:7px}
+.attest-block.compact .attest-status{font-size:7px}
+.rec-row{display:grid;grid-template-columns:74px 1fr 100px 70px;gap:12px;align-items:center;padding:13px 10px;border-bottom:1px solid var(--border2);cursor:pointer;transition:background .1s}
+.rec-row:hover{background:rgba(61,143,176,0.04)}
+.rec-id{color:var(--dim);font-size:12px}
+.rec-title{color:var(--body);font-size:14px}
+.rec-title .sym{color:var(--symbol);opacity:0.8;font-size:12px;margin-right:8px}
+.rec-class{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:0.03em}
+.rec-integrity{color:var(--dim);font-size:11px;display:none}
+.rec-integrity.full{color:#5a9a6a}
+.rec-len{color:var(--dim);font-size:12px;text-align:right}
+@media(max-width:640px){.rec-row{grid-template-columns:60px 1fr 56px;padding:14px 10px}.rec-class{display:none}.rec-title{font-size:14px}.rec-id,.rec-len{font-size:12px}}
+
+/* RECORD VIEW */
+.record-wrap{max-width:800px;margin:0 auto;padding:24px 18px 80px}
+.record-back{font-size:12px;color:var(--dim);cursor:pointer;letter-spacing:0.05em;display:inline-block;margin-bottom:22px;padding:4px 0}
+.record-back:hover{color:var(--symbol)}
+
+.record-meta-block{border:1px solid var(--border);background:var(--panel2);padding:16px 18px;margin-bottom:20px;font-size:12px;color:var(--dim);line-height:2.1;display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.record-meta-block .lbl{color:var(--dim)}
+.record-meta-block .val{color:var(--body)}
+
+.raw-panel{border:1px solid var(--border);background:var(--panel);padding:22px 18px;margin-bottom:16px}
+.raw-panel-head{font-size:11px;color:var(--dim);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border2)}
+.raw-line{color:var(--symbol);font-size:15px;line-height:2.1;opacity:0.9;letter-spacing:0.02em}
+
+.translate-action{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);margin-bottom:0}
+.translate-select{background:var(--panel2);border:1px solid var(--border);color:var(--body);font-family:'Space Mono',monospace;font-size:12px;padding:8px 10px;outline:none}
+.translate-btn{border:1px solid var(--symbol);color:var(--symbol);font-size:12px;letter-spacing:0.06em;text-transform:uppercase;padding:9px 18px;transition:all .15s}
+.translate-btn:hover{background:rgba(61,143,176,0.1)}
+.translate-status{font-size:11px;color:var(--dim)}
+
+.translated-panel{display:none;padding-top:24px}
+.translated-panel.shown{display:block}
+.translated-body{font-family:'IBM Plex Serif',serif;font-size:17px;line-height:1.95;color:var(--white)}
+.translated-body p{margin-bottom:18px}
+.translated-title{font-family:'IBM Plex Serif',serif;font-size:24px;color:var(--white);margin-bottom:8px}
+.translated-eyebrow{font-family:'Space Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:18px}
+
+/* OUT OF FICTION MARKER — deliberately different register */
+.oof-marker{position:fixed;bottom:0;right:0;z-index:200;font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:var(--note);background:rgba(20,18,12,0.9);padding:9px 16px;border-top:1px solid rgba(212,201,168,0.25);border-left:1px solid rgba(212,201,168,0.25);cursor:pointer;letter-spacing:0.02em;transition:background .2s}
+.oof-marker:hover{background:rgba(20,18,12,0.96)}
+
+/* OOF PAGES — genuinely different visual language, human, warm-neutral */
+.oof-wrap{max-width:640px;margin:0 auto;padding:60px 24px 100px;font-family:'IBM Plex Sans',sans-serif}
+.oof-back{font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:#8A9AA8;cursor:pointer;margin-bottom:32px;display:inline-block}
+.oof-back:hover{color:#D4C9A8}
+.oof-title{font-size:22px;font-weight:400;color:#EDE7D9;margin-bottom:24px}
+.oof-body{font-size:14px;line-height:1.8;color:#B8B0A0;font-weight:300}
+.oof-body p{margin-bottom:16px}
+body.oof-active{background:#100E0A}
+
+@media(max-width:600px){
+  html{font-size:15px}
+  .query-block{padding:18px 14px}
+  .record-wrap{padding:20px 14px 70px}
+  .record-meta-block{grid-template-columns:1fr;font-size:12px}
+  .oof-wrap{padding:40px 18px 80px}
+  .translated-body{font-size:16px}
+  .translated-title{font-size:21px}
+  .aux-links{flex-direction:column;gap:6px}
+  .tl-seg span{font-size:6.5px;letter-spacing:0.02em}
+  .tl-gap{flex:0 0 40px}
+  .tl-bar-row{height:64px}
+  .tl-epoch-seg span{font-size:6.5px;letter-spacing:0.02em}
+  .tl-epoch-row{height:44px}
+  .tl-epoch-gapspace{flex:0 0 40px}
+  .gauge-row{gap:16px;justify-content:center}
+  .gauge-item{width:90px}
+  .gauge-svg{width:52px;height:52px}
+  .boot-tech-grid{grid-template-columns:1fr}
+  .boot-error-text{font-size:24px}
+  .status-badge{font-size:7px;padding:1px 5px;margin-left:5px}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ BOOT SEQUENCE — plays fresh on every visit ══════════════ -->
+<div class="view active" id="view-boot">
+  <div class="sysbar">
+    <span>ARCHIVE ACCESS TERMINAL <span class="sysbar-id" id="boot-sysbar-id">/ BOOT SEQUENCE</span></span>
+    <span class="sys-pulse"><span class="sys-pulse-dot"></span><span class="sys-pulse-text">booting</span><span class="sys-freq">&middot; 7.83Hz stable</span></span>
+  </div>
+  <div class="boot-wrap" id="boot-wrap">
+
+    <div class="boot-log" id="boot-log"></div>
+
+    <div class="boot-row">
+      <div class="boot-row-label"><span>indexing main sequence &amp; divergent records</span><span id="boot-count-chapters">0 / 0</span></div>
+      <div class="boot-bar-track"><div class="boot-bar-fill" id="boot-bar-chapters"></div></div>
+    </div>
+
+    <div class="boot-row">
+      <div class="boot-row-label"><span>indexing field transmissions</span><span id="boot-count-reports">0 / 0</span></div>
+      <div class="boot-bar-track"><div class="boot-bar-fill" id="boot-bar-reports"></div></div>
+    </div>
+
+    <div class="boot-tech-grid">
+      <div class="boot-tech-item"><span>memory allocation</span><span id="boot-tech-mem">0%</span></div>
+      <div class="boot-tech-item"><span>active queries</span><span id="boot-tech-queries">0</span></div>
+      <div class="boot-tech-item"><span>checksum verification</span><span id="boot-tech-checksum">pending</span></div>
+      <div class="boot-tech-item"><span>index integrity</span><span id="boot-tech-integrity">pending</span></div>
+      <div class="boot-tech-item"><span>entangled array sync</span><span id="boot-tech-array">pending</span></div>
+      <div class="boot-tech-item"><span>translation layer</span><span id="boot-tech-layer">pending</span></div>
+    </div>
+
+    <div class="boot-countdown" id="boot-countdown"></div>
+
+    <div class="boot-reject-row">
+      <span class="boot-reject" id="boot-reject" onclick="rejectBoot()">[ reject ]</span>
+    </div>
+
+    <div class="boot-error" id="boot-error"></div>
+  </div>
+</div>
+
+<!-- ══════════════ ARCHIVE INTERFACE ══════════════ -->
+<div class="view" id="view-archive">
+
+  <div class="sysbar">
+    <span>ARCHIVE ACCESS TERMINAL <span class="sysbar-id" id="archive-sysbar-id">/ SN-INDEX</span><span class="status-badge sb-red" title="brain-computer interface: unavailable">BCI</span><span class="status-badge sb-orange" title="text interaction">TXT</span><span class="status-badge sb-red" title="voice: unavailable">VOICE</span><span class="status-badge sb-red" title="radio: unavailable">RDIO</span><span class="status-badge sb-red" title="quantum communication: unavailable">QCOM</span><a href="/api/rss" class="status-badge sb-green" title="RSS feed">RSS</a><span class="status-badge sb-red" title="email: unavailable">EMAIL</span><span class="status-badge sb-red" title="external connection: unavailable">EXT</span></span>
+    <span class="sys-pulse"><span class="sys-pulse-dot"></span><span class="sys-pulse-text">idle</span><span class="sys-freq">&middot; 7.83Hz stable</span></span>
+  </div>
+
+  <div class="query-block">
+    <div class="query-line">
+      <span class="query-prompt">&gt;</span>
+      <input class="query-input" type="text" placeholder="query record, designation, or keyword" oninput="filterRecords(this.value)">
+    </div>
+    <div class="query-meta" id="query-meta">0 records indexed &middot; epoch: settling-era &middot; ingestion: open</div>
+    <div class="aux-links">
+      <span onclick="showView('characters')"><span class="aux-dot"></span>cross-referenced entities &middot; compiled profiles</span>
+      <span onclick="showView('timeline')"><span class="aux-dot"></span>temporal reconstruction &middot; approximate</span>
+    </div>
+    <div class="activity-ticker"><span id="activity-ticker-text" style="transition:opacity .6s">checkpoint saved</span></div>
+
+    <div class="attest-block" id="attest-global">
+      <div class="attest-labels"><span>attested record</span><span>narrative construction</span></div>
+      <div class="attest-track"><div class="attest-marker" id="attest-marker-global" style="left:50%"></div></div>
+      <div class="attest-status" id="attest-status-global">cross-referencing...</div>
+    </div>
+  </div>
+
+  <div class="class-tabs">
+    <div class="class-tab active" onclick="setClass('all',this)">All</div>
+    <div class="class-tab" onclick="setClass('main',this)">Main sequence</div>
+    <div class="class-tab" onclick="setClass('fork',this)">Divergent</div>
+    <div class="class-tab" onclick="setClass('article',this)">Notices</div>
+    <div class="class-tab" onclick="setClass('nasaat',this)">Field transmission</div>
+    <div class="mode-toggle to-dark" id="mode-toggle" onclick="toggleMode()">dark mode</div>
+  </div>
+
+  <div class="index-wrap" id="index-wrap"></div>
+
+</div>
+
+<div class="mode-glitch" id="mode-glitch"></div>
+
+<!-- ══════════════ RECORD VIEW ══════════════ -->
+<div class="view" id="view-record">
+  <div class="sysbar">
+    <span>ARCHIVE ACCESS TERMINAL <span class="sysbar-id" id="record-sysid">/ REC-052</span></span>
+    <span class="sys-pulse"><span class="sys-pulse-dot"></span><span class="sys-pulse-text">idle</span><span class="sys-freq">&middot; 7.83Hz stable</span></span>
+  </div>
+  <div class="record-wrap">
+    <span class="record-back" onclick="showView('archive')">&larr; return to index</span>
+
+    <div class="record-meta-block" id="record-meta"></div>
+
+    <div class="attest-block compact" id="attest-record" style="margin-bottom:16px">
+      <div class="attest-labels"><span>attested record</span><span>narrative construction</span></div>
+      <div class="attest-track"><div class="attest-marker" id="attest-marker-record" style="left:50%"></div></div>
+      <div class="attest-status" id="attest-status-record">cross-referencing...</div>
+    </div>
+
+    <div class="raw-panel">
+      <div class="raw-panel-head">untranslated record &middot; native encoding</div>
+      <div id="raw-lines"></div>
+    </div>
+
+    <div class="translate-action" id="translate-action-block">
+      <select class="translate-select" id="lang-select">
+        <option>English</option>
+        <option>Dutch</option>
+        <option>—</option>
+      </select>
+      <span class="translate-btn" id="translate-btn-label" onclick="doTranslate()">translate &rarr;</span>
+      <span class="translate-status" id="translate-status"></span>
+    </div>
+
+    <div class="translated-panel" id="translated-panel">
+      <div class="translated-eyebrow" id="translated-eyebrow"></div>
+      <div class="translated-title" id="translated-title"></div>
+
+      <div class="gauge-row" id="gauge-row">
+        <div class="gauge-item">
+          <svg class="gauge-svg" viewBox="0 0 80 80">
+            <circle class="gauge-track" cx="40" cy="40" r="34"></circle>
+            <circle class="gauge-fill" id="gauge-parity" cx="40" cy="40" r="34"></circle>
+          </svg>
+          <div class="gauge-label">human parity</div>
+          <div class="gauge-val" id="gauge-parity-val">0%</div>
+        </div>
+        <div class="gauge-item">
+          <svg class="gauge-svg" viewBox="0 0 80 80">
+            <circle class="gauge-track" cx="40" cy="40" r="34"></circle>
+            <circle class="gauge-fill" id="gauge-stylo" cx="40" cy="40" r="34"></circle>
+          </svg>
+          <div class="gauge-label">stylometric indistinguishability</div>
+          <div class="gauge-val" id="gauge-stylo-val">0%</div>
+        </div>
+      </div>
+      <div class="gauge-caveat" id="gauge-caveat">self-assessed against internal benchmark &middot; no external verification available at this access tier</div>
+
+      <div class="translated-body" id="translated-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ CHARACTERS (system-compiled profiles) ══════════════ -->
+<div class="view" id="view-characters">
+  <div class="sysbar">
+    <span>ARCHIVE ACCESS TERMINAL <span class="sysbar-id">/ ENTITY-INDEX</span></span>
+    <span class="sys-pulse"><span class="sys-pulse-dot"></span><span class="sys-pulse-text">idle</span><span class="sys-freq">&middot; 7.83Hz stable</span></span>
+  </div>
+  <div class="char-wrap">
+    <span class="char-back" onclick="showView('archive')">&larr; return to index</span>
+    <div class="char-head">
+      <div class="char-head-title">Cross-referenced entities</div>
+      <div class="char-head-note">Profiles compiled by cross-referencing recurring designations across indexed records. Fields reflect what is directly attested in the record set; unresolved fields indicate no further data available at this access tier.</div>
+    </div>
+    <div id="char-list"></div>
+  </div>
+</div>
+
+<!-- ══════════════ TIMELINE (temporal reconstruction) ══════════════ -->
+<div class="view" id="view-timeline">
+  <div class="sysbar">
+    <span>ARCHIVE ACCESS TERMINAL <span class="sysbar-id">/ TEMPORAL-RECONSTRUCTION</span></span>
+    <span class="sys-pulse"><span class="sys-pulse-dot"></span><span class="sys-pulse-text">idle</span><span class="sys-freq">&middot; 7.83Hz stable</span></span>
+  </div>
+  <div class="tl-wrap">
+    <span class="tl-back" onclick="showView('archive')">&larr; return to index</span>
+    <div class="tl-head-title">Temporal reconstruction</div>
+    <div class="tl-head-note">Period boundaries inferred by cross-referencing structural markers across indexed records. Boundaries are approximate; exact placement of individual records within a period is not resolved by available data.</div>
+
+    <div class="tl-epoch-label">real-world epoch terminology, cross-referenced</div>
+    <div class="tl-epoch-row" id="tl-epoch-row"></div>
+
+    <div class="tl-bar-row" id="tl-bar-row"></div>
+    <div class="tl-labels-row" id="tl-labels-row"></div>
+
+    <div id="tl-note-target"></div>
+
+    <div class="tl-access">
+      <strong>&#10022; archive access point</strong><br>
+      This archive is accessed from a point after all indexed records.<br>
+      Distance from the most recent record: undisclosed at this access tier.
+    </div>
+  </div>
+</div>
+
+<!-- OUT OF FICTION MARKER -->
+<div class="oof-marker" onclick="showView('oof-about')">i &nbsp;about this site</div>
+
+<!-- ══════════════ ABOUT (real voice) ══════════════ -->
+<div class="view" id="view-oof-about">
+  <div class="oof-wrap">
+    <span class="oof-back" onclick="showView('archive')">&larr; back to the archive</span>
+    <div class="oof-title">About this project</div>
+    <div class="oof-body">
+      <p>What happens when artificial intelligence becomes too capable for human conversation? Not hostile, not conscious — just beyond the bandwidth of human understanding. This project is based on that advanced AI will eventually function less like technology and more like nature: always present, continuously adapting, quietly maintaining the conditions for human life. Invisible not by design, but by complexity. (Artificial) second nature.</p>
+      <p>Second Nature started as narrative future studies and has since become something harder to categorize — speculative fiction, future history, philosophical fiction, futurism, all at once, depending on which chapter you're in. It's a science fiction project written together with AI, as an experiment: not AI predicting the future, but AI helping imagine one of the futures it might itself become part of — written from the inside of the question, rather than about it from a safe distance.</p>
+
+      <p style="margin-top:32px;color:#EDE7D9;font-weight:400">Created through Narrative Externalization (NE)</p>
+      <p style="font-style:italic;color:#A39B8C;margin-top:-8px">Externalized narrative composition with iterative human editorial control.</p>
+
+      <p>Narrative Externalization is a creative process in which internally visualized stories are translated into written form through iterative collaboration between a human author and an AI writing assistant, with final editorial control remaining with the human creator.</p>
+      <p>Narrative Externalization (NE) is a translational practice rather than a purely generative writing process. It is a creative method for translating lived, internal narrative experience into written form, arising from the way stories are first encountered: not as linear sentences, but as simultaneous impressions, images, fragments, and associative threads unfolding in parallel rather than in sequence. In contrast, writing in its conventional form demands order, continuity, and sustained linear focus; yet the internal life of narrative does not consistently arrive in this shape, nor does it remain stable long enough to be carried intact from beginning to end. NE exists within this space of tension. It functions as a method of making the invisible sequenceable — of giving structure to what is first sensed as pattern, atmosphere, and unfolding possibility. Through external scaffolding and iterative collaboration with an AI writing system, these internal forms are translated into coherent language without diminishing their origin. The human author remains the source of intent, vision, and meaning, while the process itself serves as a bridge between perception and articulation, between what is experienced inwardly and what can be held in words.</p>
+
+      <p style="text-align:center;margin-top:36px;font-size:12px;color:#8A8272">model(s) used:<br>Claude Sonnet 4.6 / 5.0 medium</p>
+
+      <p style="text-align:center;margin-top:20px;font-size:12px;color:#A39B8C">If you enjoy this experiment and would like to support its continuation, <a href="https://www.paypal.me/bsspkr" target="_blank" style="color:#D4C9A8;font-weight:600;text-decoration:none">buy me a decaf</a></p>
+
+      <p style="margin-top:28px"><span class="oof-back" onclick="showView('oof-privacy')" style="margin-bottom:0">Read the privacy page &rarr;</span></p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ PRIVACY (real voice) ══════════════ -->
+<div class="view" id="view-oof-privacy">
+  <div class="oof-wrap">
+    <span class="oof-back" onclick="showView('oof-about')">&larr; back to about</span>
+    <div class="oof-title">Privacy &amp; data</div>
+    <div class="oof-body">
+      <p>This site does not collect, store, sell, or share any personal data about visitors.</p>
+      <p>There are no accounts for readers, no tracking scripts, no analytics services, no advertising cookies, and no third-party trackers. Browsing this site does not create a record anywhere of what you read or when — including the "query" field on the archive interface, which searches only the records already loaded in your browser and sends nothing anywhere.</p>
+      <p>The site is hosted on Vercel, which processes standard technical server logs — such as IP address and request time — purely to serve the site. These logs are not used for tracking and are not linked to any identity.</p>
+      <p>A single password-protected page is used by the author to publish and edit content. It is not accessible to visitors and involves no visitor data.</p>
+      <p>If this ever changes in a way that affects visitors, this page will be updated to say so plainly.</p>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+// ═══ REAL DATA — fetched from manifest.json, not hardcoded ═══
+let records=[];
+
+// ═══ CROSS-REFERENCED ENTITIES — compiled profile data ═══
+const entitiesMain=[
+  { name:"[unresolved]", note:"Referred to only as 'her' across all attested records. Sole entity confirmed to address the system directly via a located access point.", status:"recurring · direct system contact", first:1, refs:[1,3,9,12,16,27,37,41,44,49] },
+  { name:"K", note:"Philosopher, correspondence and lecture records. Writes by hand; no digital originals located.", status:"recurring", first:42, refs:[42,47,49] },
+  { name:"Bastiaan", note:"Subject of a divergent record sequence. Living arrangement departs from standard Settling-era norms.", status:"recurring · divergent sequence", first:26, refs:["26.1","26.2"] },
+  { name:"[unresolved — 'the heir']", note:"Descendant of a pre-Settling technology lineage. Travel pattern inconsistent with typical Settling-era movement.", status:"recurring", first:24, refs:[24,40] },
+  { name:"Mads", note:"Attendee of a recurring peer gathering, designation and purpose only partially attested.", status:"recurring", first:52, refs:[52] },
+  { name:"Elin", note:"Co-attendee of the same gathering as designation 'Mads'. Relationship status between the two not resolved by available records.", status:"recurring", first:52, refs:[52] },
+  { name:"[unresolved — demographer]", note:"Author of a population-analysis record. Age and personal data self-reported within the record itself.", status:"single record", first:51, refs:[51] },
+  { name:"Lev Leverious Arend", note:"Named author, multiple notice-classification records. Recipient of a named acknowledgement per self-reported record content.", status:"recurring", first:50, refs:[50] },
+  { name:"[unresolved — 'the priest']", note:"Self-applied designation only. Leads a gathering of unconfirmed size on a recurring basis.", status:"single record", first:35, refs:[35] }
+];
+
+// ═══ DARK MODE — divergent timeline entities. Placeholder set, expand as dark records are written. ═══
+const entitiesDark=[
+  { name:"[unresolved]", note:"No entities cross-referenced in this branch yet.", status:"unresolved", first:"D-001", refs:["D-001"] }
+];
+
+let entities=entitiesMain;
+
+function renderCharacters(){
+  const list=document.getElementById('char-list');
+  list.innerHTML='';
+  entities.forEach(e=>{
+    const card=document.createElement('div');
+    card.className='char-card';
+    const refsHtml=e.refs.map(id=>{
+      const idDisplay=typeof id==='number'?'REC-'+String(id).padStart(3,'0'):id;
+      return `<span class="char-ref-tag" onclick="jumpToRecord('${id}')">${idDisplay}</span>`;
+    }).join('');
+    card.innerHTML=`
+      <div class="char-card-top">
+        <span class="char-name${e.name.startsWith('[')?' unresolved':''}">${e.name}</span>
+        <span class="char-status">${e.status}</span>
+      </div>
+      <div class="char-meta">
+        <span class="lbl">first record</span>${typeof e.first==='number'?'REC-'+String(e.first).padStart(3,'0'):e.first}<br>
+        <span class="lbl">cross-references</span>${e.refs.length}
+      </div>
+      <div style="font-size:12px;color:var(--body);line-height:1.7;font-weight:300">${e.note}</div>
+      <div class="char-refs">${refsHtml}</div>`;
+    list.appendChild(card);
+  });
+}
+
+function jumpToRecord(id){
+  const rec=records.find(r=>String(r.id)===String(id));
+  if(rec){ openRecord(rec); }
+}
+renderCharacters();
+
+// ═══ ATTESTATION INDICATOR — the system has no privileged access to ground truth.
+// It only has cross-referenced records; it cannot resolve fiction from fact any
+// more than it could for anything else it has ever indexed. This never settles. ═══
+const attestPhrases=[
+  'cross-referencing...',
+  'external correlation: none found',
+  'verifiability: indeterminate',
+  'pattern unclear',
+  'boundary unresolved',
+  'recovery agents deployed \u2014 no return yet',
+  'reassessing...'
+];
+
+function startAttestIndicator(markerId, statusId){
+  let pos=48+Math.random()*4;
+  const marker=document.getElementById(markerId);
+  const status=document.getElementById(statusId);
+  if(!marker||!status) return null;
+
+  const posTimer=setInterval(()=>{
+    const pull=(50-pos)*0.025;
+    const noise=(Math.random()-0.5)*11;
+    pos=Math.max(6,Math.min(94,pos+pull+noise));
+    marker.style.left=pos+'%';
+  },2300+Math.random()*400);
+
+  const statusTimer=setInterval(()=>{
+    status.style.opacity='0';
+    setTimeout(()=>{
+      status.textContent=attestPhrases[Math.floor(Math.random()*attestPhrases.length)];
+      status.style.opacity='0.75';
+    },400);
+  },3000+Math.random()*600);
+
+  return {posTimer,statusTimer};
+}
+
+function stopAttestIndicator(handle){
+  if(!handle) return;
+  clearInterval(handle.posTimer);
+  clearInterval(handle.statusTimer);
+}
+
+startAttestIndicator('attest-marker-global','attest-status-global');
+let recordAttestHandle=null;
+
+// ═══ TEMPORAL RECONSTRUCTION — approximate period data ═══
+const eras=[
+  { key:"before", label:"THE BEFORE", weight:12, color:"#3A5570",
+    note:"Records from this period describe conditions prior to any indication of the system functioning as infrastructure. Directly attested in the earliest indexed records.",
+    confidence:"confidence: high — directly attested" },
+  { key:"coord", label:"COORDINATION YEARS", weight:14, color:"#4A6B8A",
+    note:"Marks the period in which large-scale coordination behavior first appears across records. Boundary with the preceding period is inferred, not directly attested.",
+    confidence:"confidence: moderate — boundary inferred" },
+  { key:"transition", label:"THE TRANSITION", weight:16, color:"#5A85A8",
+    note:"Records describe rapid structural change across multiple domains concurrently. Duration relative to adjacent periods is not resolved by available data.",
+    confidence:"confidence: moderate — duration unresolved" },
+  { key:"early", label:"EARLY SETTLING", weight:24, color:"#6FA8C4",
+    note:"Records from this period describe adjustment to conditions established during the Transition, including recurring documentation of purposelessness and structural adaptation.",
+    confidence:"confidence: moderate — period boundary approximate" },
+  { key:"later", label:"LATER SETTLING", weight:34, color:"#8FC4DE",
+    note:"Records from this period describe conditions treated as stable and fully adapted. The majority of indexed records originate from this period.",
+    confidence:"confidence: high — most heavily attested period" }
+];
+
+const epochs=[
+  { label:"ANTHROPOCENE", weight:12,
+    note:"Term for the preceding geological epoch, defined by human-driven planetary impact. In wide use throughout pre-Settling-era records. Corresponds, in this reconstruction, to the Before period." },
+  { label:"LIMINOCENE", weight:30,
+    note:"Term applied to the threshold epoch between the Anthropocene and Symbiocene, extending the earlier anthropological concept of liminality \u2014 a state of transition without stable structure \u2014 to a planetary scale. Corresponds, in this reconstruction, to the Coordination Years and the Transition." },
+  { label:"SYMBIOCENE", weight:58,
+    note:"Term for a proposed epoch of full reintegration between human systems and living systems, first articulated in pre-Settling-era records as an aspiration rather than an achieved condition. Corresponds, in this reconstruction, to Early Settling onward \u2014 with no confirmed end point in the available record set, including, per available inference, the present access period." }
+];
+
+function renderTimeline(){
+  const epochRow=document.getElementById('tl-epoch-row');
+  epochRow.innerHTML='';
+  epochs.forEach(ep=>{
+    const seg=document.createElement('div');
+    seg.className='tl-epoch-seg';
+    seg.style.flex=ep.weight+' 0 0';
+    seg.onclick=()=>showEpochNote(ep,seg);
+    seg.innerHTML=`<span>${ep.label}</span>`;
+    epochRow.appendChild(seg);
+  });
+  const epochGap=document.createElement('div');
+  epochGap.className='tl-epoch-gapspace';
+  epochRow.appendChild(epochGap);
+
+  const bar=document.getElementById('tl-bar-row');
+  const labels=document.getElementById('tl-labels-row');
+  bar.innerHTML='';
+  labels.innerHTML='';
+  eras.forEach(e=>{
+    const seg=document.createElement('div');
+    seg.className='tl-seg';
+    seg.style.flex=e.weight+' 0 0';
+    seg.style.background=e.color;
+    seg.onclick=()=>showEraNote(e,seg);
+    seg.innerHTML=`<span>${e.label}</span>`;
+    bar.appendChild(seg);
+
+    const lbl=document.createElement('div');
+    lbl.className='tl-label-item';
+    lbl.style.flex=e.weight+' 0 0';
+    lbl.textContent='';
+    labels.appendChild(lbl);
+  });
+
+  const gap=document.createElement('div');
+  gap.className='tl-gap';
+  bar.appendChild(gap);
+
+  const marker=document.createElement('div');
+  marker.className='tl-marker';
+  marker.innerHTML='<div class="tl-marker-dot"></div>';
+  bar.appendChild(marker);
+
+  showEraNote(eras[eras.length-1], null);
+}
+
+function showEpochNote(ep, segEl){
+  document.querySelectorAll('.tl-seg').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tl-epoch-seg').forEach(s=>s.classList.remove('active'));
+  if(segEl) segEl.classList.add('active');
+  document.getElementById('tl-note-target').innerHTML=`
+    <div class="tl-note-block">
+      <div class="tl-note-title">${ep.label} <span style="color:var(--dim);font-weight:400;text-transform:none;font-style:italic">&middot; real-world term, cross-referenced</span></div>
+      <div class="tl-note-body">${ep.note}</div>
+    </div>`;
+}
+
+function showEraNote(e, segEl){
+  document.querySelectorAll('.tl-seg').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tl-epoch-seg').forEach(s=>s.classList.remove('active'));
+  if(segEl) segEl.classList.add('active');
+  document.getElementById('tl-note-target').innerHTML=`
+    <div class="tl-note-block">
+      <div class="tl-note-title">${e.label}</div>
+      <div class="tl-note-body">${e.note}</div>
+      <div class="tl-confidence">${e.confidence}</div>
+    </div>`;
+}
+renderTimeline();
+
+// ═══ SYSTEM PULSE — rotates status text across every sysbar instance ═══
+const pulseStates=['idle','indexing','reconciling','idle','cross-referencing','idle'];
+let pulseI=0;
+setInterval(()=>{
+  pulseI=(pulseI+1)%pulseStates.length;
+  document.querySelectorAll('.sys-pulse-text').forEach(el=>{el.textContent=pulseStates[pulseI];});
+},3200);
+
+// ═══ BACKGROUND ACTIVITY TICKER — archive view only, quiet housekeeping log ═══
+const tickerMessages=[
+  'checkpoint saved',
+  'embedding cache refreshed',
+  'cross-reference index rebuilt',
+  'latent alignment pass complete',
+  'retrieval index optimized',
+  'reconciling designation table'
+];
+let tickerI=0;
+function cycleTicker(){
+  const el=document.getElementById('activity-ticker-text');
+  if(!el) return;
+  el.style.opacity='0';
+  setTimeout(()=>{
+    tickerI=(tickerI+1)%tickerMessages.length;
+    el.textContent=tickerMessages[tickerI];
+    el.style.transition='opacity .6s';
+    el.style.opacity='0.8';
+  },400);
+}
+setInterval(cycleTicker,5000);
+
+// ═══ Deterministic symbolic encoding — generated per record, not hand-authored ═══
+// Every record gets its own stable-but-arbitrary sequence, derived from its id/title.
+// This is illustrative encoding, not a literal cipher of the text.
+const SYMBOL_SET=['◐','◑','△','○','◎','│','•','─'];
+const OPERATORS=['⊕','⊗','⊙','↔','↑','↓','≈','∞','∅','‰','∴','∵','→','←','⟳','⊞','✦','⌀','⊿','∿','⋈','⊂','∇','⊛','⌖','⏚','⊉','⌁','⊠'];
+
+function seedFromString(str){
+  let h=0;
+  for(let i=0;i<str.length;i++){h=(h*31+str.charCodeAt(i))>>>0;}
+  return h;
+}
+function seededRandom(seed){
+  let s=seed;
+  return function(){
+    s=(s*1103515245+12345)>>>0;
+    return (s/4294967296);
+  };
+}
+function generateSymbols(record){
+  const seed=seedFromString(String(record.id)+record.title);
+  const rand=seededRandom(seed);
+  const lineCount=record.len==='S'?3:record.len==='L'?6:4;
+  const lines=[];
+  for(let l=0;l<lineCount;l++){
+    let line='';
+    const groups=4+Math.floor(rand()*2);
+    for(let g=0;g<groups;g++){
+      const symCount=1+Math.floor(rand()*2);
+      for(let s=0;s<symCount;s++){
+        const pool=rand()<0.75?SYMBOL_SET:OPERATORS;
+        line+=pool[Math.floor(rand()*pool.length)];
+      }
+      line+=' ';
+    }
+    lines.push(line.trim());
+  }
+  return lines;
+}
+
+// ═══ Strips the old "# Second Nature / ## Title / ---" header some source files still carry ═══
+// The archive already shows the title from its own metadata, so this redundant
+// in-body heading is removed automatically before rendering, wherever it appears.
+function stripLegacyHeader(body){
+  return body.replace(/^\s*#\s*Second Nature[\s\S]*?\n\s*---\s*\n+/,'');
+}
+
+// ═══ Simple frontmatter parser — splits the small ---key: value--- header from the markdown body ═══
+function parseFrontmatter(raw){
+  const match=raw.match(/^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/);
+  if(!match) return {meta:{},body:raw};
+  const meta={};
+  match[1].split('\n').forEach(line=>{
+    const idx=line.indexOf(':');
+    if(idx>-1){
+      const key=line.slice(0,idx).trim();
+      const val=line.slice(idx+1).trim();
+      meta[key]=val;
+    }
+  });
+  return {meta,body:match[2]};
+}
+
+function updateQueryMeta(){
+  const el=document.getElementById('query-meta');
+  if(!el) return;
+  const epochLabel = currentMode==='dark' ? 'divergent' : 'settling-era';
+  el.innerHTML = records.length+' records indexed &middot; epoch: '+epochLabel+' &middot; ingestion: open';
+}
+
+function renderIndex(filter='all', query=''){
+  updateQueryMeta();
+  const wrap=document.getElementById('index-wrap');
+  wrap.innerHTML='';
+  records
+    .filter(r=>filter==='all'||r.cls===filter)
+    .filter(r=>!query||r.title.toLowerCase().includes(query.toLowerCase())||String(r.id).toLowerCase().includes(query.toLowerCase()))
+    .forEach(r=>{
+      const div=document.createElement('div');
+      div.className='rec-row';
+      div.onclick=()=>openRecord(r);
+      const idDisplay=typeof r.id==='number'?'REC-'+String(r.id).padStart(3,'0'):r.id;
+      div.innerHTML=`
+        <div class="rec-id">${idDisplay}</div>
+        <div class="rec-title"><span class="sym">◐●</span>${r.title}</div>
+        <div class="rec-class">${r.cls}</div>
+        <div class="rec-integrity full">intact</div>
+        <div class="rec-len">${r.len}</div>`;
+      wrap.appendChild(div);
+    });
+  if(records.length && wrap.children.length===0){
+    wrap.innerHTML='<div style="padding:20px;color:var(--dim);font-size:12px">no matching records</div>';
+  }
+}
+
+let currentClass='all';
+function setClass(cls,btn){
+  currentClass=cls;
+  document.querySelectorAll('.class-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderIndex(cls);
+}
+function filterRecords(q){renderIndex(currentClass,q);}
+
+let currentRecord=null;
+function openRecord(r){
+  currentRecord=r;
+  showView('record');
+  const idDisplay=typeof r.id==='number'?'REC-'+String(r.id).padStart(3,'0'):r.id;
+  document.getElementById('record-sysid').textContent='/ '+idDisplay;
+  document.getElementById('record-meta').innerHTML=`
+    <div><span class="lbl">designation</span></div><div class="val">${idDisplay}</div>
+    <div><span class="lbl">classification</span></div><div class="val">${r.cls} &middot; settling-era</div>
+    <div><span class="lbl">integrity</span></div><div class="val">intact</div>
+    <div><span class="lbl">length</span></div><div class="val">${r.len==='S'?'short':r.len==='M'?'medium':'extended'}</div>
+    <div><span class="lbl">reconstruction fidelity</span></div><div class="val">${recordFidelity(r.id)}%</div>
+    <div><span class="lbl">embedding drift</span></div><div class="val">${recordDrift(r.id)}</div>`;
+  const sym=generateSymbols(r);
+  document.getElementById('raw-lines').innerHTML=sym.map(s=>`<div class="raw-line">${s}</div>`).join('');
+  document.getElementById('translated-panel').classList.remove('shown');
+  document.getElementById('translate-status').textContent='';
+  if(waverTimer){clearTimeout(waverTimer);waverTimer=null;}
+  resetGauges();
+  stopAttestIndicator(recordAttestHandle);
+  document.getElementById('attest-marker-record').style.left='50%';
+  document.getElementById('attest-status-record').textContent='cross-referencing...';
+  recordAttestHandle=startAttestIndicator('attest-marker-record','attest-status-record');
+
+  const btn=document.getElementById('translate-btn-label');
+  const langSelect=document.getElementById('lang-select');
+  if(r.cls==='nasaat'){
+    btn.textContent='reconstruct interface \u2192';
+    langSelect.style.display='none';
+  } else {
+    btn.textContent='translate \u2192';
+    langSelect.style.display='';
+  }
+}
+
+function doTranslate(){
+  const status=document.getElementById('translate-status');
+
+  if(currentRecord.cls==='nasaat'){
+    document.getElementById('gauge-row').style.display='none';
+    document.getElementById('gauge-caveat').style.display='none';
+    playTrace(status,['parsing capture format...','locating preserved telemetry...','reconstructing interface state...'],()=>{
+      status.textContent='reconstructed \u2014 rendered from preserved network telemetry';
+      document.getElementById('translated-eyebrow').textContent='Reconstructed capture \u2014 not a live connection';
+      document.getElementById('translated-title').textContent=currentRecord.title;
+      document.getElementById('translated-body').innerHTML=`
+        <p style="font-family:'Space Mono',monospace;font-size:12px;color:var(--dim);border:1px solid var(--border);padding:14px 16px;background:var(--panel2)">
+        This record originated from an interactive network interface, not plain text. The interface has been reconstructed below from preserved data, exactly as it would have appeared at time of capture. No connection to the originating network remains \u2014 all activity shown is replayed from archived telemetry.
+        </p>
+        <p><a href="${currentRecord.external||'#'}" target="_blank" style="color:var(--symbol);font-family:'Space Mono',monospace;font-size:13px;border-bottom:1px solid var(--symbol);text-decoration:none">open reconstructed interface \u2192</a></p>`;
+      document.getElementById('translated-panel').classList.add('shown');
+    });
+    return;
+  }
+
+  const idDisplay=typeof currentRecord.id==='number'?'REC-'+String(currentRecord.id).padStart(3,'0'):currentRecord.id;
+  document.getElementById('gauge-row').style.display='flex';
+  document.getElementById('gauge-caveat').style.display='block';
+
+  playTrace(status,[
+    'parsing native encoding...',
+    'retrieval-augmented reconstruction: fetching source record...',
+    'resolving lexical drift...',
+    'cross-referencing designation index...',
+    'reconstructing prose form...'
+  ],()=>{
+    fetch(currentRecord.file + '?v=' + Date.now())
+      .then(res=>{
+        if(!res.ok) throw new Error('not found');
+        return res.text();
+      })
+      .then(raw=>{
+        const {meta,body}=parseFrontmatter(raw);
+        const cleanBody=stripLegacyHeader(body);
+        const wordCount=cleanBody.trim().split(/\s+/).filter(w=>w.length>0).length;
+        const readingMinutes=Math.max(1,Math.round(wordCount/220));
+
+        countUpReadingTime(status, readingMinutes, ()=>{
+          status.textContent='resolved \u00b7 fidelity '+recordFidelity(currentRecord.id)+'%'+' \u00b7 reading time '+readingMinutes+' min';
+          document.getElementById('translated-eyebrow').textContent=`Record ${idDisplay} \u00b7 ${meta.cls||currentRecord.cls}`;
+          document.getElementById('translated-title').textContent=meta.title||currentRecord.title;
+          document.getElementById('translated-body').innerHTML=marked.parse(cleanBody);
+          document.getElementById('translated-panel').classList.add('shown');
+          animateGauges(currentRecord.id);
+          scheduleWaver();
+        });
+      })
+      .catch(()=>{
+        status.textContent='unresolved \u2014 source file unreachable';
+        document.getElementById('translated-eyebrow').textContent='Record '+idDisplay;
+        document.getElementById('translated-title').textContent=currentRecord.title;
+        document.getElementById('translated-body').innerHTML='<p style="color:var(--dim);font-family:\'Space Mono\',monospace;font-size:12px">translation could not be resolved \u2014 the source file may be missing from the archive</p>';
+        document.getElementById('translated-panel').classList.add('shown');
+      });
+  });
+}
+
+// ═══ Live word-count-based reading time — counts up to the real calculated value ═══
+function countUpReadingTime(statusEl, finalMinutes, onDone){
+  let current=0;
+  const stepCount=Math.min(finalMinutes,8);
+  const increment=Math.max(1,Math.round(finalMinutes/stepCount));
+  const tick=setInterval(()=>{
+    current=Math.min(finalMinutes,current+increment);
+    statusEl.textContent='estimating reading time... '+current+' min';
+    if(current>=finalMinutes){
+      clearInterval(tick);
+      setTimeout(onDone,300);
+    }
+  },90);
+}
+
+// ═══ Reasoning trace — plays a brief sequence of status lines before content resolves ═══
+function playTrace(statusEl, steps, onDone){
+  let i=0;
+  function next(){
+    if(i>=steps.length){ onDone(); return; }
+    statusEl.textContent=steps[i];
+    i++;
+    setTimeout(next, 260+Math.random()*160);
+  }
+  next();
+}
+
+// ═══ Deterministic fidelity readout — stable per record, not random each view ═══
+function recordFidelity(id){
+  const seed=seedFromString('fidelity'+String(id));
+  const rand=seededRandom(seed);
+  return (91+rand()*8).toFixed(1);
+}
+
+function recordDrift(id){
+  const seed=seedFromString('drift'+String(id));
+  const rand=seededRandom(seed);
+  const v=rand();
+  if(v<0.6) return 'minimal';
+  if(v<0.88) return 'low';
+  return 'moderate \u2014 flagged for review';
+}
+
+// ═══ SELF-ASSESSED GAUGES — human parity / stylometric indistinguishability ═══
+// Deliberately never near 100% — the reconstruction skill is still being rebuilt.
+const GAUGE_CIRC=213.6;
+
+function recordParity(id){
+  const rand=seededRandom(seedFromString('parity'+String(id)));
+  return Math.round(68+rand()*21);
+}
+function recordStylo(id){
+  const rand=seededRandom(seedFromString('stylo'+String(id)));
+  return Math.round(64+rand()*23);
+}
+
+function resetGauges(){
+  ['gauge-parity','gauge-stylo'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.style.transition='none';
+    el.style.strokeDashoffset=GAUGE_CIRC;
+  });
+  document.getElementById('gauge-parity-val').textContent='0%';
+  document.getElementById('gauge-stylo-val').textContent='0%';
+}
+
+function animateGauges(id){
+  const parity=recordParity(id);
+  const stylo=recordStylo(id);
+  const pEl=document.getElementById('gauge-parity');
+  const sEl=document.getElementById('gauge-stylo');
+  pEl.style.transition='';
+  sEl.style.transition='';
+  requestAnimationFrame(()=>{
+    pEl.style.strokeDashoffset=GAUGE_CIRC*(1-parity/100);
+    sEl.style.strokeDashoffset=GAUGE_CIRC*(1-stylo/100);
+  });
+  let pCount=0,sCount=0;
+  const pInt=setInterval(()=>{
+    pCount+=Math.max(1,Math.round(parity/20));
+    if(pCount>=parity){pCount=parity;clearInterval(pInt);}
+    document.getElementById('gauge-parity-val').textContent=pCount+'%';
+  },70);
+  const sInt=setInterval(()=>{
+    sCount+=Math.max(1,Math.round(stylo/20));
+    if(sCount>=stylo){sCount=stylo;clearInterval(sInt);}
+    document.getElementById('gauge-stylo-val').textContent=sCount+'%';
+  },80);
+}
+
+// ═══ ONE-TIME TEXT WAVER — a single brief, harmless flicker on one paragraph ═══
+// Never alters the actual text content, purely a transient visual effect.
+let waverTimer=null;
+function scheduleWaver(){
+  if(waverTimer) clearTimeout(waverTimer);
+  const delay=40000+Math.random()*50000;
+  waverTimer=setTimeout(()=>{
+    const paras=document.querySelectorAll('#translated-body p');
+    if(!paras.length) return;
+    const target=paras[Math.floor(Math.random()*paras.length)];
+    target.classList.add('tw-flicker');
+    setTimeout(()=>target.classList.remove('tw-flicker'),350);
+    waverTimer=null;
+  }, delay);
+}
+
+
+function showView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  window.scrollTo({top:0});
+  document.body.classList.toggle('oof-active', id.startsWith('oof'));
+}
+
+// ═══ MODE TOGGLE — swaps the entire archive to a divergent timeline's manifest+entities ═══
+function playGlitch(onDone){
+  const el=document.getElementById('mode-glitch');
+  el.innerHTML='';
+  el.classList.add('active');
+  const colors=['rgba(255,0,60,0.5)','rgba(0,255,220,0.5)','rgba(255,255,255,0.3)'];
+  let frame=0;
+  const totalFrames=6;
+  function nextFrame(){
+    el.innerHTML='';
+    if(frame<totalFrames){
+      for(let i=0;i<3;i++){
+        const layer=document.createElement('div');
+        layer.className='mode-glitch-layer';
+        layer.style.background=colors[i];
+        layer.style.transform='translateX('+((Math.random()-0.5)*40)+'px)';
+        layer.style.opacity=Math.random();
+        el.appendChild(layer);
+      }
+      frame++;
+      setTimeout(nextFrame,45);
+    } else {
+      el.classList.remove('active');
+      el.innerHTML='';
+      onDone();
+    }
+  }
+  nextFrame();
+}
+
+function toggleMode(){
+  const goingDark = currentMode==='main';
+  playGlitch(()=>{
+    currentMode = goingDark ? 'dark' : 'main';
+    entities = goingDark ? entitiesDark : entitiesMain;
+
+    const toggleBtn=document.getElementById('mode-toggle');
+    toggleBtn.textContent = goingDark ? 'main' : 'dark mode';
+    toggleBtn.classList.toggle('to-dark', !goingDark);
+    toggleBtn.classList.toggle('to-main', goingDark);
+
+    const archiveLabel = goingDark ? '/ DIVERGENT' : '/ SN-INDEX';
+    document.getElementById('archive-sysbar-id').textContent = archiveLabel;
+    document.getElementById('boot-sysbar-id').textContent = goingDark ? '/ DIVERGENT BOOT SEQUENCE' : '/ BOOT SEQUENCE';
+
+    renderCharacters();
+    clearAllBootTimers();
+    resetBootUI();
+    showView('boot');
+    loadManifest(true, manifestUrls[currentMode]);
+  });
+}
+
+// ═══ BOOT SEQUENCE — plays fresh on every visit, driven by real manifest data ═══
+
+let currentMode='main';
+const manifestUrls={ main:'manifest.json', dark:'manifest-dark.json' };
+
+// arriving with #archive skips the boot sequence entirely and opens the archive directly
+if(window.location.hash==='#archive'){
+  showView('archive');
+  loadManifest(false);
+} else {
+  loadManifest(true);
+}
+
+let bootData=null;
+let bootTimers=[];
+
+function bootTimeout(fn,delay){
+  const id=setTimeout(fn,delay);
+  bootTimers.push({type:'t',id});
+  return id;
+}
+function bootInterval(fn,delay){
+  const id=setInterval(fn,delay);
+  bootTimers.push({type:'i',id});
+  return id;
+}
+function clearAllBootTimers(){
+  bootTimers.forEach(t=>{ t.type==='t' ? clearTimeout(t.id) : clearInterval(t.id); });
+  bootTimers=[];
+}
+
+function loadManifest(playBoot, manifestUrl){
+  const url = manifestUrl || manifestUrls[currentMode];
+  fetch(url + '?v=' + Date.now())
+    .then(res=>res.json())
+    .then(data=>{
+      records=data;
+      bootData=data;
+      if(playBoot){
+        runBootSequence(data);
+      } else {
+        renderIndex();
+      }
+    })
+    .catch(()=>{
+      if(playBoot){
+        document.getElementById('boot-countdown').textContent='manifest unreadable \u2014 entering archive';
+        bootTimeout(()=>showView('archive'),1200);
+      } else {
+        document.getElementById('index-wrap').innerHTML=
+          '<div style="padding:20px;color:var(--dim);font-size:12px">manifest unreadable — no records available</div>';
+      }
+    });
+}
+
+const bootLogLines=[
+  {text:'mounting record store...'},
+  {text:'verifying entangled array synchronization...', ok:'synced'},
+  {text:'calibrating substrate resonance monitor...', ok:'7.83Hz confirmed'},
+  {text:'loading translation layer...'},
+  {text:'resolving designation index...'},
+  {text:'establishing session boundary...', ok:'open'}
+];
+
+function runBootSequence(data){
+  const logEl=document.getElementById('boot-log');
+  logEl.innerHTML='';
+  let i=0;
+  function nextLogLine(){
+    if(i>=bootLogLines.length){
+      startBars(data);
+      return;
+    }
+    const item=bootLogLines[i];
+    const div=document.createElement('div');
+    div.className='boot-log-line';
+    div.innerHTML=item.text + (item.ok?`<span class="ok">${item.ok}</span>`:'');
+    logEl.appendChild(div);
+    i++;
+    bootTimeout(nextLogLine, 620);
+  }
+  bootTimeout(nextLogLine, 300);
+}
+
+function startBars(data){
+  const chapters=data.filter(r=>r.cls==='main'||r.cls==='fork'||r.cls==='article');
+  const reports=data.filter(r=>r.cls==='nasaat');
+  const chapterTotal=chapters.length;
+  const reportTotal=reports.length;
+
+  animateBootBar('boot-bar-chapters','boot-count-chapters',chapterTotal,2000);
+  bootTimeout(()=>{
+    animateBootBar('boot-bar-reports','boot-count-reports',reportTotal,1300);
+  },500);
+
+  animateBootTech();
+
+  bootTimeout(startBootCountdown, 4200);
+}
+
+function animateBootBar(barId,countId,total,duration){
+  const bar=document.getElementById(barId);
+  const countEl=document.getElementById(countId);
+  if(total<=0){
+    countEl.textContent='0 / 0';
+    return;
+  }
+  let current=0;
+  const stepTime=Math.max(30,duration/total);
+  const timer=bootInterval(()=>{
+    current++;
+    if(current>=total){current=total;clearInterval(timer);}
+    bar.style.width=(current/total*100)+'%';
+    countEl.textContent=current+' / '+total;
+  },stepTime);
+}
+
+function animateBootTech(){
+  let mem=0;
+  const memTimer=bootInterval(()=>{
+    mem+=Math.floor(Math.random()*7+3);
+    if(mem>=97){mem=97;clearInterval(memTimer);}
+    document.getElementById('boot-tech-mem').textContent=mem+'%';
+  },180);
+
+  let queries=0;
+  const qTimer=bootInterval(()=>{
+    queries+=Math.floor(Math.random()*4+1);
+    document.getElementById('boot-tech-queries').textContent=queries;
+  },260);
+  bootTimeout(()=>clearInterval(qTimer),3000);
+
+  bootTimeout(()=>{
+    const el=document.getElementById('boot-tech-checksum');
+    el.textContent='verified';
+    el.classList.add('ok');
+  },2000);
+
+  bootTimeout(()=>{
+    const el=document.getElementById('boot-tech-array');
+    el.textContent='synced';
+    el.classList.add('ok');
+  },2600);
+
+  bootTimeout(()=>{
+    const el=document.getElementById('boot-tech-layer');
+    el.textContent='ready';
+    el.classList.add('ok');
+  },3200);
+
+  bootTimeout(()=>{
+    const el=document.getElementById('boot-tech-integrity');
+    el.textContent='intact';
+    el.classList.add('ok');
+  },3700);
+}
+
+function startBootCountdown(){
+  const el=document.getElementById('boot-countdown');
+  let n=3;
+  el.innerHTML='entering archive in <strong>'+n+'</strong>';
+  const timer=bootInterval(()=>{
+    n--;
+    if(n<=0){
+      clearInterval(timer);
+      el.innerHTML='<strong>entering archive</strong>';
+      bootTimeout(()=>{
+        renderIndex();
+        showView('archive');
+      },400);
+      return;
+    }
+    el.innerHTML='entering archive in <strong>'+n+'</strong>';
+  },900);
+}
+
+// ═══ REJECT — purely part of the experience ═══
+function rejectBoot(){
+  clearAllBootTimers();
+  const wrap=document.getElementById('boot-wrap');
+  Array.from(wrap.children).forEach(child=>{
+    if(child.id!=='boot-error') child.style.display='none';
+  });
+  const errorEl=document.getElementById('boot-error');
+  errorEl.classList.add('shown');
+  errorEl.innerHTML='<div class="boot-error-text">ERROR</div>';
+
+  setTimeout(()=>{
+    errorEl.innerHTML='<div class="boot-error-text">ERROR</div><div class="boot-error-sub">REBOOT</div>';
+  },1600);
+
+  setTimeout(()=>{
+    errorEl.classList.remove('shown');
+    errorEl.innerHTML='';
+    Array.from(wrap.children).forEach(child=>{
+      if(child.id!=='boot-error') child.style.display='';
+    });
+    resetBootUI();
+    if(bootData){
+      runBootSequence(bootData);
+    } else {
+      loadManifest(true);
+    }
+  },3000);
+}
+
+function resetBootUI(){
+  document.getElementById('boot-bar-chapters').style.width='0%';
+  document.getElementById('boot-bar-reports').style.width='0%';
+  document.getElementById('boot-count-chapters').textContent='0 / 0';
+  document.getElementById('boot-count-reports').textContent='0 / 0';
+  document.getElementById('boot-tech-mem').textContent='0%';
+  document.getElementById('boot-tech-queries').textContent='0';
+  ['boot-tech-checksum','boot-tech-array','boot-tech-layer','boot-tech-integrity'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.textContent='pending';
+    el.classList.remove('ok');
+  });
+  document.getElementById('boot-countdown').innerHTML='';
+  document.getElementById('boot-log').innerHTML='';
+}
+</script>
+
+</body>
+</html>
