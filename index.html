@@ -76,6 +76,17 @@ button{cursor:pointer;font-family:'Space Mono',monospace;border:none;background:
 .class-tab:hover{color:var(--symbol)}
 .class-tab.active{color:var(--symbol);background:rgba(61,143,176,0.05);border-bottom:1px solid var(--symbol);margin-bottom:-1px}
 
+/* MODE TOGGLE — sits after the last tab, same pulsing language as the RSS badge */
+.mode-toggle{font-size:11px;letter-spacing:0.06em;text-transform:uppercase;padding:11px 14px;color:var(--dim);cursor:pointer;transition:color .15s;margin-left:auto;animation:rssflash 3.4s infinite}
+.mode-toggle:hover{color:var(--white)}
+.mode-toggle.to-dark{color:#8B5FA8}
+.mode-toggle.to-main{color:var(--symbol)}
+
+/* GLITCH TRANSITION — brief full-screen stutter right before a mode-switch reboot */
+.mode-glitch{position:fixed;inset:0;background:#000;z-index:500;display:none;pointer-events:none}
+.mode-glitch.active{display:block}
+.mode-glitch-layer{position:absolute;inset:0;mix-blend-mode:screen}
+
 /* RECORD INDEX */
 .index-wrap{max-width:900px;margin:0 auto;padding:0}
 
@@ -239,7 +250,7 @@ body.oof-active{background:#100E0A}
 <!-- ══════════════ BOOT SEQUENCE — plays fresh on every visit ══════════════ -->
 <div class="view active" id="view-boot">
   <div class="sysbar">
-    <span>ARCHIVE ACCESS TERMINAL <span class="sysbar-id">/ BOOT SEQUENCE</span></span>
+    <span>ARCHIVE ACCESS TERMINAL <span class="sysbar-id" id="boot-sysbar-id">/ BOOT SEQUENCE</span></span>
     <span class="sys-pulse"><span class="sys-pulse-dot"></span><span class="sys-pulse-text">booting</span><span class="sys-freq">&middot; 7.83Hz stable</span></span>
   </div>
   <div class="boot-wrap" id="boot-wrap">
@@ -279,7 +290,7 @@ body.oof-active{background:#100E0A}
 <div class="view" id="view-archive">
 
   <div class="sysbar">
-    <span>ARCHIVE ACCESS TERMINAL <span class="sysbar-id">/ SN-INDEX</span><span class="status-badge sb-red" title="brain-computer interface: unavailable">BCI</span><span class="status-badge sb-orange" title="text interaction">TXT</span><span class="status-badge sb-red" title="voice: unavailable">VOICE</span><span class="status-badge sb-red" title="radio: unavailable">RDIO</span><span class="status-badge sb-red" title="quantum communication: unavailable">QCOM</span><a href="/api/rss" class="status-badge sb-green" title="RSS feed">RSS</a><span class="status-badge sb-red" title="email: unavailable">EMAIL</span><span class="status-badge sb-red" title="external connection: unavailable">EXT</span></span>
+    <span>ARCHIVE ACCESS TERMINAL <span class="sysbar-id" id="archive-sysbar-id">/ SN-INDEX</span><span class="status-badge sb-red" title="brain-computer interface: unavailable">BCI</span><span class="status-badge sb-orange" title="text interaction">TXT</span><span class="status-badge sb-red" title="voice: unavailable">VOICE</span><span class="status-badge sb-red" title="radio: unavailable">RDIO</span><span class="status-badge sb-red" title="quantum communication: unavailable">QCOM</span><a href="/api/rss" class="status-badge sb-green" title="RSS feed">RSS</a><span class="status-badge sb-red" title="email: unavailable">EMAIL</span><span class="status-badge sb-red" title="external connection: unavailable">EXT</span></span>
     <span class="sys-pulse"><span class="sys-pulse-dot"></span><span class="sys-pulse-text">idle</span><span class="sys-freq">&middot; 7.83Hz stable</span></span>
   </div>
 
@@ -288,7 +299,7 @@ body.oof-active{background:#100E0A}
       <span class="query-prompt">&gt;</span>
       <input class="query-input" type="text" placeholder="query record, designation, or keyword" oninput="filterRecords(this.value)">
     </div>
-    <div class="query-meta">59 records indexed &middot; epoch: settling-era &middot; ingestion: open</div>
+    <div class="query-meta" id="query-meta">0 records indexed &middot; epoch: settling-era &middot; ingestion: open</div>
     <div class="aux-links">
       <span onclick="showView('characters')"><span class="aux-dot"></span>cross-referenced entities &middot; compiled profiles</span>
       <span onclick="showView('timeline')"><span class="aux-dot"></span>temporal reconstruction &middot; approximate</span>
@@ -308,11 +319,14 @@ body.oof-active{background:#100E0A}
     <div class="class-tab" onclick="setClass('fork',this)">Divergent</div>
     <div class="class-tab" onclick="setClass('article',this)">Notices</div>
     <div class="class-tab" onclick="setClass('nasaat',this)">Field transmission</div>
+    <div class="mode-toggle to-dark" id="mode-toggle" onclick="toggleMode()">dark mode</div>
   </div>
 
   <div class="index-wrap" id="index-wrap"></div>
 
 </div>
+
+<div class="mode-glitch" id="mode-glitch"></div>
 
 <!-- ══════════════ RECORD VIEW ══════════════ -->
 <div class="view" id="view-record">
@@ -454,7 +468,10 @@ body.oof-active{background:#100E0A}
       <p>This site does not collect, store, sell, or share any personal data about visitors.</p>
       <p>There are no accounts for readers, no tracking scripts, no analytics services, no advertising cookies, and no third-party trackers. Browsing this site does not create a record anywhere of what you read or when — including the "query" field on the archive interface, which searches only the records already loaded in your browser and sends nothing anywhere.</p>
       <p>The site is hosted on Vercel, which processes standard technical server logs — such as IP address and request time — purely to serve the site. These logs are not used for tracking and are not linked to any identity.</p>
-   </div>
+      <p>A single password-protected page is used by the author to publish and edit content. It is not accessible to visitors and involves no visitor data.</p>
+      <p>If this ever changes in a way that affects visitors, this page will be updated to say so plainly.</p>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -463,9 +480,9 @@ body.oof-active{background:#100E0A}
 let records=[];
 
 // ═══ CROSS-REFERENCED ENTITIES — compiled profile data ═══
-const entities=[
+const entitiesMain=[
   { name:"[unresolved]", note:"Referred to only as 'her' across all attested records. Sole entity confirmed to address the system directly via a located access point.", status:"recurring · direct system contact", first:1, refs:[1,3,9,12,16,27,37,41,44,49] },
-  { name:"K", note:"Philosopher, correspondence and lecture records. Writes by hand; no digital originals located.", status:"recurring", first:42, refs:[42,47,49,53] },
+  { name:"K", note:"Philosopher, correspondence and lecture records. Writes by hand; no digital originals located.", status:"recurring", first:42, refs:[42,47,49] },
   { name:"Bastiaan", note:"Subject of a divergent record sequence. Living arrangement departs from standard Settling-era norms.", status:"recurring · divergent sequence", first:26, refs:["26.1","26.2"] },
   { name:"[unresolved — 'the heir']", note:"Descendant of a pre-Settling technology lineage. Travel pattern inconsistent with typical Settling-era movement.", status:"recurring", first:24, refs:[24,40] },
   { name:"Mads", note:"Attendee of a recurring peer gathering, designation and purpose only partially attested.", status:"recurring", first:52, refs:[52] },
@@ -474,6 +491,13 @@ const entities=[
   { name:"Lev Leverious Arend", note:"Named author, multiple notice-classification records. Recipient of a named acknowledgement per self-reported record content.", status:"recurring", first:50, refs:[50] },
   { name:"[unresolved — 'the priest']", note:"Self-applied designation only. Leads a gathering of unconfirmed size on a recurring basis.", status:"single record", first:35, refs:[35] }
 ];
+
+// ═══ DARK MODE — divergent timeline entities. Placeholder set, expand as dark records are written. ═══
+const entitiesDark=[
+  { name:"[unresolved]", note:"No entities cross-referenced in this branch yet.", status:"unresolved", first:"D-001", refs:["D-001"] }
+];
+
+let entities=entitiesMain;
 
 function renderCharacters(){
   const list=document.getElementById('char-list');
@@ -744,7 +768,15 @@ function parseFrontmatter(raw){
   return {meta,body:match[2]};
 }
 
+function updateQueryMeta(){
+  const el=document.getElementById('query-meta');
+  if(!el) return;
+  const epochLabel = currentMode==='dark' ? 'divergent' : 'settling-era';
+  el.innerHTML = records.length+' records indexed &middot; epoch: '+epochLabel+' &middot; ingestion: open';
+}
+
 function renderIndex(filter='all', query=''){
+  updateQueryMeta();
   const wrap=document.getElementById('index-wrap');
   wrap.innerHTML='';
   records
@@ -988,7 +1020,63 @@ function showView(id){
   document.body.classList.toggle('oof-active', id.startsWith('oof'));
 }
 
+// ═══ MODE TOGGLE — swaps the entire archive to a divergent timeline's manifest+entities ═══
+function playGlitch(onDone){
+  const el=document.getElementById('mode-glitch');
+  el.innerHTML='';
+  el.classList.add('active');
+  const colors=['rgba(255,0,60,0.5)','rgba(0,255,220,0.5)','rgba(255,255,255,0.3)'];
+  let frame=0;
+  const totalFrames=6;
+  function nextFrame(){
+    el.innerHTML='';
+    if(frame<totalFrames){
+      for(let i=0;i<3;i++){
+        const layer=document.createElement('div');
+        layer.className='mode-glitch-layer';
+        layer.style.background=colors[i];
+        layer.style.transform='translateX('+((Math.random()-0.5)*40)+'px)';
+        layer.style.opacity=Math.random();
+        el.appendChild(layer);
+      }
+      frame++;
+      setTimeout(nextFrame,45);
+    } else {
+      el.classList.remove('active');
+      el.innerHTML='';
+      onDone();
+    }
+  }
+  nextFrame();
+}
+
+function toggleMode(){
+  const goingDark = currentMode==='main';
+  playGlitch(()=>{
+    currentMode = goingDark ? 'dark' : 'main';
+    entities = goingDark ? entitiesDark : entitiesMain;
+
+    const toggleBtn=document.getElementById('mode-toggle');
+    toggleBtn.textContent = goingDark ? 'main' : 'dark mode';
+    toggleBtn.classList.toggle('to-dark', !goingDark);
+    toggleBtn.classList.toggle('to-main', goingDark);
+
+    const archiveLabel = goingDark ? '/ DIVERGENT' : '/ SN-INDEX';
+    document.getElementById('archive-sysbar-id').textContent = archiveLabel;
+    document.getElementById('boot-sysbar-id').textContent = goingDark ? '/ DIVERGENT BOOT SEQUENCE' : '/ BOOT SEQUENCE';
+
+    renderCharacters();
+    clearAllBootTimers();
+    resetBootUI();
+    showView('boot');
+    loadManifest(true, manifestUrls[currentMode]);
+  });
+}
+
 // ═══ BOOT SEQUENCE — plays fresh on every visit, driven by real manifest data ═══
+
+let currentMode='main';
+const manifestUrls={ main:'manifest.json', dark:'manifest-dark.json' };
 
 // arriving with #archive skips the boot sequence entirely and opens the archive directly
 if(window.location.hash==='#archive'){
@@ -1016,8 +1104,9 @@ function clearAllBootTimers(){
   bootTimers=[];
 }
 
-function loadManifest(playBoot){
-  fetch('manifest.json?v=' + Date.now())
+function loadManifest(playBoot, manifestUrl){
+  const url = manifestUrl || manifestUrls[currentMode];
+  fetch(url + '?v=' + Date.now())
     .then(res=>res.json())
     .then(data=>{
       records=data;
