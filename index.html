@@ -475,7 +475,7 @@ body.oof-active{background:#100E0A}
   <div class="files-wrap">
     <span class="files-back" onclick="showView('record')">&larr; return to record</span>
     <div class="files-head-title">Supplementary materials</div>
-    <div class="files-head-note" id="files-head-note">Attached materials cross-referenced against this record. Not all records carry supplementary files.</div>
+    <div class="files-head-note" id="files-head-note">Attached materials cross-referenced against this record.</div>
     <div id="files-list"></div>
   </div>
 </div>
@@ -1101,7 +1101,7 @@ function renderFilesList(){
     item.className='file-item';
     item.onclick=()=>openFileReveal(f);
     item.innerHTML=`
-      <div class="file-thumb"><img src="${f.path}" onerror="this.style.display='none'"></div>
+      <div class="file-thumb"><img src="${f.path}" onerror="this.style.display='none';this.parentElement.innerHTML='<span style=&quot;font-family:Space Mono,monospace;font-size:8px;color:var(--dim);padding:6px;text-align:center&quot;>not yet uploaded</span>'"></div>
       <div class="file-item-info">
         <div class="file-item-title">${f.name}</div>
         <div class="file-item-caption">${f.caption||''}</div>
@@ -1170,6 +1170,9 @@ function openFileReveal(fileObj){
       }
     }
     fileRevealFrame=requestAnimationFrame(frame);
+  };
+  img.onerror=()=>{
+    statusEl.textContent='unresolved \u2014 source file unreachable';
   };
   img.src=fileObj.path;
 }
