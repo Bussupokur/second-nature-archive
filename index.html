@@ -95,6 +95,39 @@ button{cursor:pointer;font-family:'Space Mono',monospace;border:none;background:
 .aux-links span:hover{opacity:0.7}
 .aux-dot{width:5px;height:5px;border-radius:50%;background:var(--symbol);animation:blink 2.4s infinite;flex-shrink:0}
 
+/* index-row files indicator — quiet, only present when files exist */
+.rec-files-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--active);animation:blink 2.4s infinite;margin-left:8px;vertical-align:middle}
+
+/* supplementary materials line — appears under translated content, only if files exist */
+.supp-materials{margin-top:32px;padding-top:18px;border-top:1px solid var(--border2);font-family:'Space Mono',monospace;font-size:11px;color:var(--active);letter-spacing:0.04em;cursor:pointer;animation:rssflash 3.4s infinite;display:none}
+.supp-materials.shown{display:block}
+.supp-materials:hover{opacity:0.75}
+
+/* files list view — same register as char-wrap / tl-wrap */
+.files-wrap{max-width:800px;margin:0 auto;padding:24px 18px 80px}
+.files-back{font-size:12px;color:var(--dim);cursor:pointer;letter-spacing:0.05em;display:inline-block;margin-bottom:20px}
+.files-back:hover{color:var(--symbol)}
+.files-head-title{font-size:14px;color:var(--dim);letter-spacing:0.04em;margin-bottom:4px}
+.files-head-note{font-size:11px;color:var(--dim);line-height:1.7;margin-bottom:24px;max-width:560px}
+.file-item{display:flex;gap:16px;border:1px solid var(--border);background:var(--panel2);padding:16px;margin-bottom:12px;cursor:pointer;transition:border-color .15s}
+.file-item:hover{border-color:var(--symbol)}
+.file-thumb{width:80px;height:80px;flex-shrink:0;background:#000;border:1px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center}
+.file-thumb img{width:100%;height:100%;object-fit:cover}
+.file-item-info{flex:1}
+.file-item-title{font-size:13px;color:var(--white);margin-bottom:6px}
+.file-item-caption{font-size:11px;color:var(--dim);line-height:1.6}
+.file-item-type{font-family:'Space Mono',monospace;font-size:9px;color:var(--symbol);letter-spacing:0.05em;text-transform:uppercase;margin-top:8px;display:inline-block}
+
+/* file reveal overlay — progressive, slow, line-by-line render */
+.file-reveal-overlay{display:none;position:fixed;inset:0;background:rgba(2,4,8,0.94);z-index:600;align-items:center;justify-content:center;flex-direction:column;padding:24px}
+.file-reveal-overlay.shown{display:flex}
+.file-reveal-canvas-wrap{position:relative;max-width:90vw;max-height:75vh;border:1px solid var(--border)}
+.file-reveal-canvas-wrap canvas{display:block;max-width:90vw;max-height:75vh}
+.file-reveal-status{font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:0.05em;margin-top:16px}
+.file-reveal-caption{font-size:12px;color:var(--dim);margin-top:6px;max-width:500px;text-align:center;line-height:1.6}
+.file-reveal-close{position:fixed;top:20px;right:24px;font-family:'Space Mono',monospace;font-size:12px;color:var(--symbol);letter-spacing:0.05em;cursor:pointer;padding:8px 16px;border:1px solid var(--border);background:rgba(6,10,18,0.9)}
+.file-reveal-close:hover{border-color:var(--symbol)}
+
 .char-wrap{max-width:900px;margin:0 auto;padding:24px 18px 80px}
 .char-back{font-size:12px;color:var(--dim);cursor:pointer;letter-spacing:0.05em;display:inline-block;margin-bottom:20px}
 .char-back:hover{color:var(--symbol)}
@@ -385,6 +418,7 @@ body.oof-active{background:#100E0A}
       <div class="gauge-caveat" id="gauge-caveat">self-assessed against internal benchmark &middot; no external verification available at this access tier</div>
 
       <div class="translated-body" id="translated-body"></div>
+      <div class="supp-materials" id="supp-materials" onclick="renderFilesList();showView('files')"></div>
     </div>
   </div>
 </div>
@@ -430,6 +464,29 @@ body.oof-active{background:#100E0A}
       Distance from the most recent record: undisclosed at this access tier.
     </div>
   </div>
+</div>
+
+<!-- ══════════════ FILES (supplementary materials per record) ══════════════ -->
+<div class="view" id="view-files">
+  <div class="sysbar">
+    <span>ARCHIVE ACCESS TERMINAL <span class="sysbar-id" id="files-sysid">/ SUPPLEMENTARY</span></span>
+    <span class="sys-pulse"><span class="sys-pulse-dot"></span><span class="sys-pulse-text">idle</span><span class="sys-freq">&middot; 7.83Hz stable</span></span>
+  </div>
+  <div class="files-wrap">
+    <span class="files-back" onclick="showView('record')">&larr; return to record</span>
+    <div class="files-head-title">Supplementary materials</div>
+    <div class="files-head-note" id="files-head-note">Attached materials cross-referenced against this record. Not all records carry supplementary files.</div>
+    <div id="files-list"></div>
+  </div>
+</div>
+
+<div class="file-reveal-overlay" id="file-reveal-overlay">
+  <span class="file-reveal-close" onclick="closeFileReveal()">close &times;</span>
+  <div class="file-reveal-canvas-wrap">
+    <canvas id="file-reveal-canvas"></canvas>
+  </div>
+  <div class="file-reveal-status" id="file-reveal-status">reconstructing...</div>
+  <div class="file-reveal-caption" id="file-reveal-caption"></div>
 </div>
 
 <!-- OUT OF FICTION MARKER -->
@@ -787,9 +844,10 @@ function renderIndex(filter='all', query=''){
       div.className='rec-row';
       div.onclick=()=>openRecord(r);
       const idDisplay=typeof r.id==='number'?'REC-'+String(r.id).padStart(3,'0'):r.id;
+      const filesDot = (r.files && r.files.length) ? '<span class="rec-files-dot" title="supplementary materials"></span>' : '';
       div.innerHTML=`
         <div class="rec-id">${idDisplay}</div>
-        <div class="rec-title"><span class="sym">◐●</span>${r.title}</div>
+        <div class="rec-title"><span class="sym">◐●</span>${r.title}${filesDot}</div>
         <div class="rec-class">${r.cls}</div>
         <div class="rec-integrity full">intact</div>
         <div class="rec-len">${r.len}</div>`;
@@ -826,6 +884,8 @@ function openRecord(r){
   document.getElementById('raw-lines').innerHTML=sym.map(s=>`<div class="raw-line">${s}</div>`).join('');
   document.getElementById('translated-panel').classList.remove('shown');
   document.getElementById('translate-status').textContent='';
+  document.getElementById('supp-materials').classList.remove('shown');
+  document.getElementById('supp-materials').textContent='';
   if(waverTimer){clearTimeout(waverTimer);waverTimer=null;}
   resetGauges();
   stopAttestIndicator(recordAttestHandle);
@@ -894,6 +954,7 @@ function doTranslate(){
           document.getElementById('translated-panel').classList.add('shown');
           animateGauges(currentRecord.id);
           scheduleWaver();
+          updateSuppMaterials(currentRecord);
         });
       })
       .catch(()=>{
@@ -1010,6 +1071,112 @@ function scheduleWaver(){
     setTimeout(()=>target.classList.remove('tw-flicker'),350);
     waverTimer=null;
   }, delay);
+}
+
+// ═══ SUPPLEMENTARY MATERIALS — only appears once a record's content has actually rendered,
+// and only if that record has files attached. Most records will never show this. ═══
+function updateSuppMaterials(record){
+  const el=document.getElementById('supp-materials');
+  if(record.files && record.files.length){
+    el.textContent='supplementary materials \u2014 '+record.files.length+' attached';
+    el.classList.add('shown');
+  } else {
+    el.classList.remove('shown');
+    el.textContent='';
+  }
+}
+
+function renderFilesList(){
+  const idDisplay=typeof currentRecord.id==='number'?'REC-'+String(currentRecord.id).padStart(3,'0'):currentRecord.id;
+  document.getElementById('files-sysid').textContent='/ SUPPLEMENTARY \u00b7 '+idDisplay;
+  const listEl=document.getElementById('files-list');
+  listEl.innerHTML='';
+  const files = (currentRecord && currentRecord.files) ? currentRecord.files : [];
+  if(!files.length){
+    listEl.innerHTML='<div style="padding:20px;color:var(--dim);font-size:12px">no supplementary materials on record</div>';
+    return;
+  }
+  files.forEach(f=>{
+    const item=document.createElement('div');
+    item.className='file-item';
+    item.onclick=()=>openFileReveal(f);
+    item.innerHTML=`
+      <div class="file-thumb"><img src="${f.path}" onerror="this.style.display='none'"></div>
+      <div class="file-item-info">
+        <div class="file-item-title">${f.name}</div>
+        <div class="file-item-caption">${f.caption||''}</div>
+        <span class="file-item-type">${f.type||'file'}</span>
+      </div>`;
+    listEl.appendChild(item);
+  });
+}
+
+// ═══ PROGRESSIVE FILE REVEAL — image renders top to bottom over several seconds,
+// deliberately slow, evoking a recovered signal rather than an instant load ═══
+let fileRevealFrame=null;
+
+function openFileReveal(fileObj){
+  const overlay=document.getElementById('file-reveal-overlay');
+  const canvas=document.getElementById('file-reveal-canvas');
+  const ctx=canvas.getContext('2d');
+  const statusEl=document.getElementById('file-reveal-status');
+  const captionEl=document.getElementById('file-reveal-caption');
+
+  statusEl.textContent='reconstructing... 0%';
+  captionEl.textContent=fileObj.caption||'';
+  overlay.classList.add('shown');
+
+  const img=new Image();
+  img.onload=()=>{
+    const maxW=Math.min(img.naturalWidth, window.innerWidth*0.85);
+    const scale=maxW/img.naturalWidth;
+    const w=Math.round(img.naturalWidth*scale);
+    const h=Math.round(img.naturalHeight*scale);
+    canvas.width=w;
+    canvas.height=h;
+
+    const offscreen=document.createElement('canvas');
+    offscreen.width=w;
+    offscreen.height=h;
+    const offCtx=offscreen.getContext('2d');
+    offCtx.drawImage(img,0,0,w,h);
+
+    ctx.fillStyle='#000';
+    ctx.fillRect(0,0,w,h);
+
+    const duration=4500;
+    const startTime=performance.now();
+
+    function frame(now){
+      const elapsed=now-startTime;
+      const progress=Math.min(1, elapsed/duration);
+      const revealHeight=Math.round(h*progress);
+
+      if(revealHeight>0){
+        ctx.drawImage(offscreen, 0,0,w,revealHeight, 0,0,w,revealHeight);
+      }
+      // scan line at the leading edge
+      if(revealHeight<h){
+        ctx.fillStyle='rgba(125,187,214,0.5)';
+        ctx.fillRect(0, revealHeight, w, 2);
+      }
+
+      statusEl.textContent='reconstructing... '+Math.round(progress*100)+'%';
+
+      if(progress<1){
+        fileRevealFrame=requestAnimationFrame(frame);
+      } else {
+        statusEl.textContent='resolved';
+      }
+    }
+    fileRevealFrame=requestAnimationFrame(frame);
+  };
+  img.src=fileObj.path;
+}
+
+function closeFileReveal(){
+  if(fileRevealFrame) cancelAnimationFrame(fileRevealFrame);
+  document.getElementById('file-reveal-overlay').classList.remove('shown');
 }
 
 
