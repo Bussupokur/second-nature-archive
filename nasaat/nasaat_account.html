@@ -81,6 +81,17 @@ canvas#dash-starfield{position:fixed;inset:0;width:100%;height:100%;pointer-even
 .report-modal-close{position:absolute;top:-38px;right:0;font-family:'Space Mono',monospace;font-size:11px;color:var(--dash-cyan);letter-spacing:0.06em;cursor:pointer;padding:6px 12px;border:1px solid rgba(95,212,255,0.3);background:rgba(5,11,20,0.9)}
 .report-modal-close:hover{border-color:var(--dash-cyan)}
 
+.file-lightbox-overlay{display:none;position:fixed;inset:0;background:rgba(2,4,8,0.92);z-index:1000;align-items:center;justify-content:center;padding:24px}
+.file-lightbox-overlay.shown{display:flex}
+.file-lightbox-img{max-width:90vw;max-height:85vh;object-fit:contain}
+.file-lightbox-close{position:fixed;top:20px;right:24px;font-family:'Space Mono',monospace;font-size:12px;color:var(--dash-cyan);letter-spacing:0.05em;cursor:pointer;padding:8px 16px;border:1px solid rgba(95,212,255,0.3);background:rgba(5,11,20,0.9);z-index:1001}
+.file-lightbox-close:hover{border-color:var(--dash-cyan)}
+
+.file-card{background:var(--dash-panel2);border:1px solid rgba(95,212,255,0.15);padding:16px;margin-bottom:14px}
+.file-card-thumb{width:100%;max-width:280px;background:#000;border:1px solid rgba(95,212,255,0.15);position:relative;overflow:hidden;cursor:pointer;margin-bottom:12px}
+.file-card-thumb img{width:100%;display:block}
+.file-card-thumb .file-placeholder{display:none;padding:40px 20px;text-align:center;font-family:'Space Mono',monospace;font-size:10px;color:var(--dash-dim)}
+
 .dash-empty{position:relative;border:1px solid rgba(63,232,224,0.25);background:linear-gradient(160deg, rgba(18,10,50,0.6), rgba(10,6,32,0.4));padding:60px 24px;text-align:center;overflow:hidden;box-shadow:0 0 40px rgba(95,212,255,0.08), inset 0 0 40px rgba(63,232,224,0.04)}
 .dash-empty-text{position:relative;z-index:2;font-size:13px;color:#9d8fc7;margin-bottom:26px;line-height:1.7}
 .dash-cta{position:relative;z-index:2;display:inline-block;font-family:'Space Mono',monospace;font-size:12px;color:#0A0620;background:linear-gradient(90deg,var(--dash-mag),var(--dash-cyan));letter-spacing:0.08em;padding:15px 30px;text-decoration:none;font-weight:700;transition:all .25s;box-shadow:0 0 25px rgba(95,212,255,0.4)}
@@ -227,6 +238,7 @@ canvas#dash-starfield{position:fixed;inset:0;width:100%;height:100%;pointer-even
   <div class="dash-tabs">
     <div class="dash-tab active" onclick="setDashTab('missions',this)">Missions</div>
     <div class="dash-tab" onclick="setDashTab('reports',this)">Field Reports</div>
+    <div class="dash-tab" onclick="setDashTab('files',this)">Files</div>
     <div class="dash-tab" onclick="setDashTab('messages',this)">Messages</div>
     <div class="dash-tab" onclick="setDashTab('notifications',this)">Notifications</div>
     <div class="dash-tab" onclick="setDashTab('groups',this)">Groups</div>
@@ -283,6 +295,19 @@ canvas#dash-starfield{position:fixed;inset:0;width:100%;height:100%;pointer-even
       <div style="margin-top:10px"><span class="dash-inline-link" onclick="openReportWindow('nasaat_report_002_final.html')" style="cursor:pointer">open report &rarr;</span></div>
     </div>
     <div id="pending-reports-section"></div>
+  </div>
+
+  <div class="dash-panel" id="dash-files">
+    <div class="dash-panel-title">Files</div>
+    <div class="dash-subheading">Recovered</div>
+    <div class="file-card">
+      <div class="file-card-thumb" onclick="openFileLightbox('renderings/dm-0791-community-drawing.jpg')">
+        <img src="renderings/dm-0791-community-drawing.jpg" alt="DM-0791 mission sketch" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
+        <div class="file-placeholder">image not yet uploaded</div>
+      </div>
+      <div class="mission-card-title" style="margin-bottom:6px">DM-0791 &mdash; mission sketch</div>
+      <div class="mission-card-sub">recovered by the system &middot; artist rendering, originally posted to a community page &middot; source account no longer resolvable</div>
+    </div>
   </div>
 
   <div class="dash-panel" id="dash-messages">
@@ -423,6 +448,11 @@ canvas#dash-starfield{position:fixed;inset:0;width:100%;height:100%;pointer-even
       <span class="report-modal-close" onclick="closeReportWindow()">close &times;</span>
       <iframe id="report-modal-iframe" src="about:blank"></iframe>
     </div>
+  </div>
+
+  <div class="file-lightbox-overlay" id="file-lightbox-overlay" onclick="closeFileLightbox()">
+    <span class="file-lightbox-close" onclick="closeFileLightbox()">close &times;</span>
+    <img class="file-lightbox-img" id="file-lightbox-img" src="" onclick="event.stopPropagation()">
   </div>
 </div>
 
@@ -672,6 +702,14 @@ function openReportWindow(url){
 function closeReportWindow(){
   document.getElementById('report-modal-overlay').classList.remove('shown');
   document.getElementById('report-modal-iframe').src = 'about:blank';
+}
+
+function openFileLightbox(src){
+  document.getElementById('file-lightbox-img').src = src;
+  document.getElementById('file-lightbox-overlay').classList.add('shown');
+}
+function closeFileLightbox(){
+  document.getElementById('file-lightbox-overlay').classList.remove('shown');
 }
 
 function showNewMissionForm(){
