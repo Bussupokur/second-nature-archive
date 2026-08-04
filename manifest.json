@@ -55,6 +55,7 @@
   { "id": 52, "title": "The Comfortable Extinction", "cls": "main", "len": "M", "file": "chapters/052-the-comfortable-extinction.md" },
   { "id": 53, "title": "The Threshold", "cls": "main", "len": "M", "file": "chapters/053-the-threshold.md"},
   { "id": 54, "title": "Cuttings", "cls": "main", "len": "M", "file": "chapters/054-cuttings.md", "files": [{"name": "artificialflorarobotics.png", "path": "files/artificialflorarobotics.png", "caption": "Recovered diagram — flora-robotics hybrid anatomy", "type": "image"}]},
+  { "id": 55, "title": "The Blind Spot", "cls": "main", "len": "M", "file": "chapters/055-the-blind-spot.md"},
   { "id": 45, "title": "Regulatory Body Withdraws Authorization for Direct Neural Transfer Lenses (art. 1)", "cls": "article", "len": "S", "file": "articles/045-neural-transfer-lenses.md" },
   { "id": 50, "title": "No, Not Aliens. Probably. (art. 2)", "cls": "article", "len": "M", "file": "articles/050-no-not-aliens.md" },
   { "id": "26.1", "title": "No More Shadows — Part One (Bastiaan)", "cls": "fork", "len": "L", "file": "forks/no-more-shadows/01-bastiaan.md" },
