@@ -46,6 +46,13 @@ header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-betw
 .view-area{flex:1;position:relative;overflow:hidden;min-height:0}
 canvas#tracker{position:absolute;inset:0;width:100%;height:100%}
 canvas#cam-canvas{position:absolute;inset:0;width:100%;height:100%;display:none}
+canvas#cam-canvas-b{position:absolute;inset:0;width:100%;height:100%;display:none;pointer-events:none}
+.cam-zoom-overlay{position:absolute;inset:0;display:none;z-index:5;pointer-events:none;font-family:'Space Mono',monospace}
+.cz-top-left{position:absolute;top:10px;left:10px;font-size:10px;color:#7fdbff;text-shadow:0 0 4px rgba(127,219,255,0.5)}
+.cz-top-right{position:absolute;top:10px;right:10px;font-size:10px;color:#7fdbff;text-shadow:0 0 4px rgba(127,219,255,0.5)}
+.cz-bottom-left{position:absolute;bottom:10px;left:10px;font-size:9px;color:#7fdbff;line-height:1.6;text-shadow:0 0 4px rgba(127,219,255,0.5)}
+.cz-bottom-right{position:absolute;bottom:10px;right:10px;display:flex;align-items:center;gap:5px;font-size:9px;color:#7fdbff;text-shadow:0 0 4px rgba(127,219,255,0.5)}
+.cz-scale-line{display:inline-block;width:28px;height:1px;background:#7fdbff}
 canvas#radio-spectrogram{position:absolute;inset:0;width:100%;height:100%;display:none;background:#000}
 .radio-log{position:absolute;bottom:0;left:0;right:0;max-height:38%;overflow:hidden;display:none;background:linear-gradient(transparent,rgba(5,8,16,0.9) 30%);padding:10px 12px 8px;z-index:5}
 .radio-log-line{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);line-height:1.8;opacity:0;animation:radiologin .4s forwards}
@@ -224,6 +231,13 @@ input.spec-range::-webkit-slider-thumb{appearance:none;width:14px;height:14px;bo
 
     <!-- camera canvas (static) -->
     <canvas id="cam-canvas"></canvas>
+    <canvas id="cam-canvas-b"></canvas>
+    <div class="cam-zoom-overlay" id="cam-zoom-overlay">
+      <div class="cz-top-left" id="cz-mag"></div>
+      <div class="cz-top-right" id="cz-pass"></div>
+      <div class="cz-bottom-left" id="cz-grid"></div>
+      <div class="cz-bottom-right" id="cz-scale"><span class="cz-scale-line"></span><span id="cz-scale-val"></span></div>
+    </div>
     <canvas id="radio-spectrogram"></canvas>
     <div class="radio-log" id="radio-log"></div>
     <div class="cam-tag" id="cam-tag"></div>
@@ -246,7 +260,7 @@ input.spec-range::-webkit-slider-thumb{appearance:none;width:14px;height:14px;bo
 
     <!-- artist's rendering — manual placeholder until real procedural visual exists for this body -->
     <div class="rendering-view" id="rendering-view">
-      <img id="rendering-img" src="renderings/dm-0791-rendering.jpg" alt="Artist's rendering" onerror="this.style.display='none';document.getElementById('rendering-missing').style.display='flex';">
+      <img id="rendering-img" src="renderings/browndwarf.png" alt="Artist's rendering" onerror="this.style.display='none';document.getElementById('rendering-missing').style.display='flex';">
       <div class="rendering-missing" id="rendering-missing">
         <div class="rendering-missing-label">RENDERING &middot; NOT YET PROVIDED</div>
         <div class="rendering-missing-sub">No artist's rendering has been uploaded for this record.</div>
@@ -720,6 +734,210 @@ function stopRadioLog(){
   if(logEl)logEl.innerHTML='';
 }
 
+// ═══════════════════ CAMERA RENDERING ENGINE — DM-0791v1 moon surface ═══════════════════
+// Brown dwarf lighting: dim, directional, infrared-dominant (opposite emphasis from a star).
+// Each channel gets genuinely different physics, not just a different color filter.
+
+const cCtxB=document.getElementById('cam-canvas-b').getContext('2d');
+const camCvB=document.getElementById('cam-canvas-b');
+
+let camSimTime=0;
+let currentPass=4;
+const TOTAL_PASSES=12;
+let gridLon=118.4, gridLat=6.2;
+let terrainCache={};
+
+function seededRand(seed){
+  let s=seed;
+  return function(){ s=(s*1103515245+12345)>>>0; return s/4294967296; };
+}
+
+// generates a stable, cached grayscale terrain patch (relief noise) per channel-independent seed
+function getTerrainPatch(w,h){
+  const key=w+'x'+h;
+  if(terrainCache[key]) return terrainCache[key];
+  const rand=seededRand(77123);
+  const cols=32, rows=24;
+  const grid=[];
+  for(let y=0;y<=rows;y++){
+    grid.push([]);
+    for(let x=0;x<=cols;x++) grid[y].push(rand());
+  }
+  const patch=new Float32Array(w*h);
+  for(let py=0;py<h;py++){
+    const gy=(py/h)*rows, gy0=Math.floor(gy), gy1=Math.min(rows,gy0+1), fy=gy-gy0;
+    for(let px=0;px<w;px++){
+      const gx=(px/w)*cols, gx0=Math.floor(gx), gx1=Math.min(cols,gx0+1), fx=gx-gx0;
+      const v00=grid[gy0][gx0],v10=grid[gy0][gx1],v01=grid[gy1][gx0],v11=grid[gy1][gx1];
+      const top=v00+(v10-v00)*fx, bot=v01+(v11-v01)*fx;
+      patch[py*w+px]=top+(bot-top)*fy;
+    }
+  }
+  terrainCache[key]=patch;
+  return patch;
+}
+
+// terminator position sweeps slowly across the frame — driven by camSimTime, gives
+// a sense of real orbital motion rather than a static locked view
+function terminatorX(w){
+  const drift=(Math.sin(camSimTime*0.00013)*0.5+0.5);
+  return w*(0.3+drift*0.4);
+}
+
+function renderChannelFrame(channel){
+  const w=cCv.width,h=cCv.height;
+  if(w<2||h<2)return;
+  const terrain=getTerrainPatch(w,h);
+  const out=cCtx.createImageData(w,h);
+  const d=out.data;
+  const termX=terminatorX(w);
+
+  let litColor, darkColor, transitionWidth, baseBrightness, noiseFloor;
+  if(channel==='vis'){
+    litColor=[140,78,42]; darkColor=[4,2,1]; transitionWidth=6; baseBrightness=1.0; noiseFloor=0.01;
+  } else if(channel==='ir'){
+    litColor=[212,117,58]; darkColor=[58,26,10]; transitionWidth=60; baseBrightness=1.25; noiseFloor=0.02;
+  } else if(channel==='uv'){
+    litColor=[70,40,120]; darkColor=[8,4,14]; transitionWidth=10; baseBrightness=0.12; noiseFloor=0.09;
+  } else if(channel==='therm'){
+    litColor=[210,60,40]; darkColor=[20,40,90]; transitionWidth=30; baseBrightness=1.0; noiseFloor=0.015;
+  } else {
+    litColor=[120,120,120]; darkColor=[10,10,10]; transitionWidth=6; baseBrightness=1; noiseFloor=0.02;
+  }
+
+  for(let y=0;y<h;y++){
+    for(let x=0;x<w;x++){
+      const idx=(y*w+x);
+      const t=terrain[idx];
+      const distFromTerm=(x-termX)/transitionWidth;
+      const litFrac=Math.max(0,Math.min(1, 0.5+distFromTerm*0.5));
+      let r=darkColor[0]+(litColor[0]-darkColor[0])*litFrac;
+      let g=darkColor[1]+(litColor[1]-darkColor[1])*litFrac;
+      let b=darkColor[2]+(litColor[2]-darkColor[2])*litFrac;
+      const relief=(t-0.5)*40*litFrac;
+      r=Math.max(0,Math.min(255,(r+relief)*baseBrightness));
+      g=Math.max(0,Math.min(255,(g+relief)*baseBrightness));
+      b=Math.max(0,Math.min(255,(b+relief)*baseBrightness));
+      const grain=(Math.random()-0.5)*255*noiseFloor;
+      r=Math.max(0,Math.min(255,r+grain));
+      g=Math.max(0,Math.min(255,g+grain));
+      b=Math.max(0,Math.min(255,b+grain));
+      const di=idx*4;
+      d[di]=r; d[di+1]=g; d[di+2]=b; d[di+3]=255;
+    }
+  }
+  cCtx.putImageData(out,0,0);
+}
+
+// ── detector noise layer — scanlines, dead pixels, cosmic rays, composited on top ──
+let deadPixels=[];
+function initDeadPixels(w,h,channel){
+  const rand=seededRand(channel.length*991+w*7+h*13);
+  const count=channel==='uv'?14:5;
+  deadPixels=[];
+  for(let i=0;i<count;i++) deadPixels.push({x:Math.floor(rand()*w),y:Math.floor(rand()*h)});
+}
+
+function renderNoiseLayer(channel){
+  const w=camCvB.width,h=camCvB.height;
+  if(w<2||h<2)return;
+  cCtxB.clearRect(0,0,w,h);
+
+  // scanlines
+  cCtxB.fillStyle='rgba(0,0,0,0.08)';
+  for(let y=0;y<h;y+=2) cCtxB.fillRect(0,y,w,1);
+
+  // dead pixels
+  cCtxB.fillStyle= channel==='uv' ? 'rgba(140,100,220,0.5)' : 'rgba(255,255,255,0.4)';
+  deadPixels.forEach(p=>cCtxB.fillRect(p.x,p.y,1,1));
+
+  // occasional cosmic ray streak
+  if(Math.random()<0.02){
+    const cy=Math.random()*h;
+    cCtxB.strokeStyle='rgba(255,255,255,0.6)';
+    cCtxB.lineWidth=1;
+    cCtxB.beginPath();
+    cCtxB.moveTo(Math.random()*w,cy);
+    cCtxB.lineTo(Math.random()*w,cy+Math.random()*8-4);
+    cCtxB.stroke();
+  }
+
+  // soft bloom vignette at edges
+  const grad=cCtxB.createRadialGradient(w/2,h/2,Math.min(w,h)*0.3,w/2,h/2,Math.max(w,h)*0.7);
+  grad.addColorStop(0,'rgba(0,0,0,0)');
+  grad.addColorStop(1,'rgba(0,0,0,0.35)');
+  cCtxB.fillStyle=grad;
+  cCtxB.fillRect(0,0,w,h);
+}
+
+let channelAnimFrame=null;
+function stopChannelAnim(){ if(channelAnimFrame){cancelAnimationFrame(channelAnimFrame);channelAnimFrame=null;} }
+
+function startChannelAnim(channel){
+  stopChannelAnim();
+  const a=document.getElementById('view-area');
+  cCv.width=a.offsetWidth; cCv.height=a.offsetHeight;
+  camCvB.width=a.offsetWidth; camCvB.height=a.offsetHeight;
+  terrainCache={};
+  initDeadPixels(cCv.width,cCv.height,channel);
+  function frame(){
+    camSimTime+=16;
+    renderChannelFrame(channel);
+    renderNoiseLayer(channel);
+    updateZoomOverlay(channel);
+    channelAnimFrame=requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+// ── zoom telemetry overlay — magnification, pass counter, grid, scale ──
+let passTimer=null;
+function updateZoomOverlay(channel){
+  const magVal = channel==='uv' ? '×3.1' : '×14.2';
+  document.getElementById('cz-mag').textContent=magVal;
+  document.getElementById('cz-pass').textContent='PASS '+String(currentPass).padStart(2,'0')+' / '+TOTAL_PASSES;
+  document.getElementById('cz-grid').innerHTML=
+    'GRID '+gridLon.toFixed(1)+'E / '+gridLat.toFixed(1)+'N<br>DM-0791v1 &middot; '+
+    (channel==='therm'?'THERMAL GRADIENT':channel==='uv'?'UV — LOW SIGNAL':'SURFACE');
+  document.getElementById('cz-scale-val').textContent = channel==='uv' ? '180m' : '40m';
+}
+
+function startPassCycle(){
+  if(passTimer)clearInterval(passTimer);
+  passTimer=setInterval(()=>{
+    currentPass=currentPass>=TOTAL_PASSES?1:currentPass+1;
+    gridLon=(gridLon+3.7)%360;
+    gridLat=Math.max(-40,Math.min(40,gridLat+(Math.random()-0.5)*8));
+  },9000);
+}
+function stopPassCycle(){ if(passTimer){clearInterval(passTimer);passTimer=null;} }
+
+// ── boot sequence per channel tab ──
+const bootStages=['OFFLINE','POWERING UP','INITIALIZING','ADJUSTING GAIN','CALIBRATING','DARK FRAME','ONLINE'];
+let bootTimer=null;
+function playBootSequence(channel,onDone){
+  let i=0;
+  const stateEl=document.getElementById('cam-status-state');
+  const nameEl=document.getElementById('cam-status-name');
+  const centerEl=document.getElementById('cam-status-center');
+  centerEl.style.display='flex';
+  nameEl.textContent=camData[channel].name;
+  function next(){
+    if(i>=bootStages.length){
+      centerEl.style.display='none';
+      showBurst(500);
+      onDone();
+      return;
+    }
+    stateEl.textContent=bootStages[i];
+    stateEl.className='cam-status-state '+(bootStages[i]==='ONLINE'?'st-connecting':'st-offline');
+    i++;
+    bootTimer=setTimeout(next,260+Math.random()*180);
+  }
+  next();
+}
+function stopBootSequence(){ if(bootTimer){clearTimeout(bootTimer);bootTimer=null;} }
+
 let currentView='tracker';
 
 // set true once real procedural visual data exists for this body — retires the artist's rendering automatically
@@ -735,6 +953,8 @@ function setView(view,btn){
   tCv.style.display='none';
   document.getElementById('tracker-tag').style.display='none';
   cCv.style.display='none';
+  camCvB.style.display='none';
+  document.getElementById('cam-zoom-overlay').style.display='none';
   document.getElementById('cam-tag').style.display='none';
   document.getElementById('cam-status-center').style.display='none';
   document.getElementById('spec-overlay').style.display='none';
@@ -745,6 +965,9 @@ function setView(view,btn){
   stopCamStatic();
   stopRadioSpectrogram();
   stopRadioLog();
+  stopChannelAnim();
+  stopPassCycle();
+  stopBootSequence();
 
   if(view==='rendering'){
     document.getElementById('rendering-view').style.display='flex';
@@ -776,17 +999,17 @@ function setView(view,btn){
     startRadioSpectrogram();
     scheduleRadioLog();
   } else {
+    // vis / ir / uv / therm — real differentiated rendering, boot sequence, zoom telemetry
     const d=camData[view];
-    cCv.style.display='block';
     document.getElementById('cam-tag').style.display='block';
     document.getElementById('cam-tag').textContent=d.name;
-    const sc=document.getElementById('cam-status-center');
-    sc.style.display='flex';
-    document.getElementById('cam-status-name').textContent=d.name;
-    const ss=document.getElementById('cam-status-state');
-    ss.textContent=d.state.toUpperCase();
-    ss.className='cam-status-state '+(d.state==='connecting'?'st-connecting':'st-offline');
-    startCamStatic();
+    startPassCycle();
+    playBootSequence(view,()=>{
+      cCv.style.display='block';
+      camCvB.style.display='block';
+      document.getElementById('cam-zoom-overlay').style.display='block';
+      startChannelAnim(view);
+    });
   }
   currentView=view;
 }
