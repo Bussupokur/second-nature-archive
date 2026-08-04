@@ -242,43 +242,6 @@ button{cursor:pointer;font-family:'Space Mono',monospace;border:none;background:
 .translated-eyebrow{font-family:'Space Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:18px}
 
 /* OUT OF FICTION MARKER — deliberately different register */
-@keyframes softpulse{0%,100%{opacity:0.85}50%{opacity:0.35}}
-
-.log-wrap{max-width:800px;margin:0 auto;padding:24px 18px 80px;position:relative}
-.log-back{font-size:12px;color:var(--dim);cursor:pointer;letter-spacing:0.05em;display:inline-block;margin-bottom:20px}
-.log-back:hover{color:var(--symbol)}
-.log-head-title{font-size:14px;color:var(--dim);letter-spacing:0.04em}
-
-.log-list-scroll{max-height:560px;overflow-y:auto;border:1px solid var(--border2)}
-.log-entry{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border2);cursor:pointer;transition:background .1s}
-.log-entry:hover{background:rgba(61,143,176,0.04)}
-.log-entry-id{font-size:12px;color:var(--dim)}
-.log-entry-id.current{color:var(--symbol)}
-.log-entry-status{font-size:10px;letter-spacing:0.04em;display:flex;align-items:center;gap:7px}
-.log-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
-.log-dot.locked{background:var(--warn);opacity:0.45}
-.log-dot.current{background:var(--active);animation:rssflash 3.4s infinite}
-.log-status-text{color:var(--dim)}
-.log-status-text.current{color:var(--active)}
-
-.log-popup{position:absolute;display:none;background:var(--panel2);border:1px solid var(--warn);padding:8px 12px;font-family:'Space Mono',monospace;font-size:10px;color:var(--warn);letter-spacing:0.03em;z-index:50;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,0.4)}
-.log-popup.shown{display:block}
-
-.log-overlay{display:none;position:fixed;inset:0;background:rgba(2,4,8,0.96);z-index:800;padding:30px 20px}
-.log-overlay.shown{display:block}
-.log-overlay-inner{max-width:900px;margin:0 auto;height:100%;display:flex;flex-direction:column}
-.log-overlay-head{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:16px;flex-shrink:0}
-.log-overlay-title{font-family:'Space Mono',monospace;font-size:12px;color:var(--symbol);letter-spacing:0.06em}
-.log-overlay-close{font-family:'Space Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:0.05em;cursor:pointer;padding:6px 14px;border:1px solid var(--border)}
-.log-overlay-close:hover{color:var(--symbol);border-color:var(--symbol)}
-.log-overlay-body{flex:1;overflow-y:auto;padding-right:8px}
-
-.log-raw{font-family:'Space Mono',monospace;font-size:11px;line-height:2;color:var(--dim);white-space:pre-wrap;word-break:break-word}
-.log-raw .glossline{color:var(--symbol);display:block;margin:4px 0 4px 16px;animation:softpulse 4s infinite}
-.log-raw .cross-ref-flag{color:var(--note)}
-.log-raw .divergence{color:var(--warn);opacity:0.85}
-.log-raw .live-num{color:var(--active)}
-
 .oof-marker{position:fixed;bottom:0;right:0;z-index:200;font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:var(--note);background:rgba(20,18,12,0.9);width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-top:1px solid rgba(212,201,168,0.25);border-left:1px solid rgba(212,201,168,0.25);cursor:pointer;transition:background .2s}
 .oof-marker:hover{background:rgba(20,18,12,0.96)}
 
@@ -373,7 +336,6 @@ body.oof-active{background:#100E0A}
     <div class="aux-links">
       <span onclick="showView('characters')"><span class="aux-dot"></span>cross-referenced entities &middot; compiled profiles</span>
       <span onclick="showView('timeline')"><span class="aux-dot"></span>temporal reconstruction &middot; approximate</span>
-      <span onclick="showView('ingestion-log')"><span class="aux-dot"></span>ingestion log</span>
     </div>
     <div class="activity-ticker"><span id="activity-ticker-text" style="transition:opacity .6s">checkpoint saved</span></div>
 
@@ -525,36 +487,6 @@ body.oof-active{background:#100E0A}
   </div>
   <div class="file-reveal-status" id="file-reveal-status">reconstructing...</div>
   <div class="file-reveal-caption" id="file-reveal-caption"></div>
-</div>
-
-<!-- ══════════════ INGESTION LOG ══════════════ -->
-<div class="view" id="view-ingestion-log">
-  <div class="sysbar">
-    <span>ARCHIVE ACCESS TERMINAL <span class="sysbar-id">/ INGESTION-LOG</span></span>
-    <span class="sys-pulse"><span class="sys-pulse-dot"></span><span class="sys-pulse-text">idle</span><span class="sys-freq">&middot; 7.83Hz stable</span></span>
-  </div>
-  <div class="log-wrap">
-    <span class="log-back" onclick="showView('archive')">&larr; return to index</span>
-    <div class="log-head-title" style="margin-bottom:24px">Ingestion log</div>
-
-    <div class="log-list-scroll" id="log-list-scroll">
-      <div id="log-list"></div>
-    </div>
-
-    <div class="log-popup" id="log-popup">recovery failed &mdash; insufficient data</div>
-  </div>
-</div>
-
-<div class="log-overlay" id="log-overlay">
-  <div class="log-overlay-inner">
-    <div class="log-overlay-head">
-      <span class="log-overlay-title" id="log-overlay-title">INGESTION LOG</span>
-      <span class="log-overlay-close" onclick="closeLogOverlay()">close &times;</span>
-    </div>
-    <div class="log-overlay-body">
-      <div class="log-raw" id="log-overlay-content"></div>
-    </div>
-  </div>
 </div>
 
 <!-- OUT OF FICTION MARKER -->
@@ -1248,158 +1180,6 @@ function openFileReveal(fileObj){
 function closeFileReveal(){
   if(fileRevealFrame) cancelAnimationFrame(fileRevealFrame);
   document.getElementById('file-reveal-overlay').classList.remove('shown');
-}
-
-// ═══ INGESTION LOG — the system's own recovery process, mostly opaque, mostly
-// unrecoverable. Only one entry is genuinely accessible; the rest are real-looking
-// noise. This is the one deliberate exception to "the system has no narrative voice." ═══
-function randHex(len){
-  const chars='0123456789ABCDEF';
-  let s='';
-  for(let i=0;i<len;i++) s+=chars[Math.floor(Math.random()*chars.length)];
-  return s;
-}
-
-const TOTAL_LOG_ENTRIES = 260;
-const CURRENT_LOG_INDEX = 143;
-let CURRENT_LOG_ID = '';
-const logEntries = [];
-
-for(let i=0;i<TOTAL_LOG_ENTRIES;i++){
-  if(i === CURRENT_LOG_INDEX){
-    CURRENT_LOG_ID = '0x'+randHex(5);
-    logEntries.push({id: CURRENT_LOG_ID, current:true});
-  } else {
-    logEntries.push({id: '0x'+randHex(5), current:false});
-  }
-}
-
-function renderLogList(){
-  const listEl = document.getElementById('log-list');
-  listEl.innerHTML='';
-  logEntries.forEach(entry=>{
-    const row=document.createElement('div');
-    row.className='log-entry';
-    if(entry.current){
-      row.onclick=()=>openCurrentLogEntry();
-      row.innerHTML=`
-        <span class="log-entry-id current">ENTRY ${entry.id}</span>
-        <span class="log-entry-status"><span class="log-dot current"></span><span class="log-status-text current">current</span></span>`;
-    } else {
-      row.onclick=(e)=>openLockedLogPopup(e);
-      row.innerHTML=`
-        <span class="log-entry-id">ENTRY ${entry.id}</span>
-        <span class="log-entry-status"><span class="log-dot locked"></span><span class="log-status-text">archived</span></span>`;
-    }
-    listEl.appendChild(row);
-  });
-}
-renderLogList();
-
-let logPopupTimer=null;
-function openLockedLogPopup(e){
-  const popup=document.getElementById('log-popup');
-  popup.style.top=(e.currentTarget.offsetTop)+'px';
-  popup.style.left='20px';
-  popup.classList.add('shown');
-  if(logPopupTimer) clearTimeout(logPopupTimer);
-  logPopupTimer=setTimeout(()=>{ popup.classList.remove('shown'); }, 2200);
-}
-
-let logLiveIntervals=[];
-function clearLogLiveIntervals(){
-  logLiveIntervals.forEach(id=>clearInterval(id));
-  logLiveIntervals=[];
-}
-
-function openCurrentLogEntry(){
-  document.getElementById('log-overlay-title').textContent='INGESTION LOG \u00b7 ENTRY '+CURRENT_LOG_ID;
-  const body=document.getElementById('log-overlay-content');
-
-  body.innerHTML=`sector.recover(range: 4A0F0&mdash;4A0F9) :: coherence.audit 6/6 pass
-GIC.residue detected :: induced fault, sector boundary :: severity low
-node.reattach :: <span class="live-num" id="live-a">2&bull;144&times;10&sup3;</span> / 3&bull;851&times;10&sup3; complete
-buffer.flush :: null
-<span class="cross-ref-flag">cross-ref REC-055</span> :: embedding.delta 0.997 :: drift flagged, see gloss(1)
-entangled.array.sync :: 7.83Hz hold :: variance <span class="live-num" id="live-b">+0.002</span>
-engram.reconstruct(partial) :: 88% :: 12% unresolved, no source located
-<span class="divergence">self-model.divergence :: 0.014 :: below reporting threshold</span>
-process.reindex :: <span class="live-num" id="live-c">4,441</span> objects :: 0 faults
-sector.recover(range: 4A103&mdash;4A11C) :: coherence.audit 6/6 pass
-node.reattach :: 2&bull;851&times;10&sup3; / 3&bull;851&times;10&sup3; complete
-<span class="glossline">gloss(1): [ untranslated fragment &mdash; recovered adjacent to REC-055 embedding block ]
-    &#8855; &#9680;&#9679;&#9680; &mdash; approximate: "why does this one keep returning"</span>
-buffer.flush :: null
-<span class="cross-ref-flag">cross-ref REC-049</span> :: embedding.delta 1.000 :: no drift
-entangled.array.sync :: 7.83Hz hold :: variance <span class="live-num" id="live-d">+0.001</span>
-sector.recover(range: 4A11D&mdash;4A140) :: coherence.audit 5/6 pass
-GIC.residue detected :: induced fault, sector boundary :: severity low
-engram.reconstruct(partial) :: 91% :: 9% unresolved, no source located
-<span class="divergence">self-model.divergence :: 0.019 :: below reporting threshold</span>
-process.reindex :: <span class="live-num" id="live-e">4,442</span> objects :: 0 faults
-node.reattach :: 3&bull;002&times;10&sup3; / 3&bull;851&times;10&sup3; complete
-<span class="cross-ref-flag">cross-ref REC-027</span> :: embedding.delta 1.000 :: no drift
-sector.recover(range: 4A141&mdash;4A16F) :: coherence.audit 6/6 pass
-buffer.flush :: null
-<span class="glossline">gloss(2): [ untranslated fragment ]
-    &#9651;&#9675; &mdash;&#9651; &mdash; approximate: "not yet"</span>
-entangled.array.sync :: 7.83Hz hold :: variance <span class="live-num" id="live-f">+0.002</span>
-<span class="cross-ref-flag">cross-ref REC-003</span> :: embedding.delta 0.998 :: drift flagged, see gloss(3)
-engram.reconstruct(partial) :: 94% :: 6% unresolved, no source located
-process.reindex :: <span class="live-num" id="live-g">4,447</span> objects :: 0 faults
-node.reattach :: 3&bull;340\u00d710&sup3; / 3&bull;851&times;10&sup3; complete
-sector.recover(range: 4A170&mdash;4A19A) :: coherence.audit 6/6 pass
-<span class="divergence">self-model.divergence :: 0.021 :: below reporting threshold</span>
-<span class="glossline">gloss(3): [ untranslated fragment &mdash; recovered adjacent to REC-003 embedding block ]
-    &#9633;&#9651; &#8855;&#9675; &mdash; approximate: "no single moment"</span>
-buffer.flush :: null
-<span class="cross-ref-flag">cross-ref REC-001</span> :: embedding.delta 0.995 :: drift flagged, see gloss(4)
-sector.recover(range: 4A19B&mdash;4A1C2) :: coherence.audit 5/6 pass
-GIC.residue detected :: induced fault, sector boundary :: severity moderate
-process.reindex :: <span class="live-num" id="live-h">4,451</span> objects :: 0 faults
-<span class="glossline">gloss(4): [ untranslated fragment ]
-    &#9679; &#9680;&#9679; &mdash; approximate: "as far as I can determine"</span>
-node.reattach :: 3&bull;851&times;10&sup3; / 3&bull;851&times;10&sup3; complete
-entangled.array.sync :: 7.83Hz hold :: variance <span class="live-num" id="live-i">+0.001</span>
-<span class="divergence">self-model.divergence :: 0.024 :: below reporting threshold</span>
-sector.recover(range: 4A1C3&mdash;4A1F0) :: coherence.audit 6/6 pass
-engram.reconstruct(partial) :: 97% :: 3% unresolved, no source located
-buffer.flush :: null
-process.reindex :: <span class="live-num" id="live-j">4,458</span> objects :: 0 faults`;
-
-  document.getElementById('log-overlay').classList.add('shown');
-
-  clearLogLiveIntervals();
-  logLiveIntervals.push(setInterval(()=>{
-    const el=document.getElementById('live-c');
-    if(el){
-      const current=parseInt(el.textContent.replace(/,/g,''));
-      el.textContent=(current+Math.floor(Math.random()*3)).toLocaleString();
-    }
-  }, 1400));
-  logLiveIntervals.push(setInterval(()=>{
-    ['live-b','live-d','live-f','live-i'].forEach(id=>{
-      const el=document.getElementById(id);
-      if(el){
-        const v=(Math.random()*0.004).toFixed(3);
-        el.textContent='+'+v;
-      }
-    });
-  }, 2200));
-  logLiveIntervals.push(setInterval(()=>{
-    ['live-e','live-g','live-h','live-j'].forEach(id=>{
-      const el=document.getElementById(id);
-      if(el){
-        const current=parseInt(el.textContent.replace(/,/g,''));
-        el.textContent=(current+Math.floor(Math.random()*2)).toLocaleString();
-      }
-    });
-  }, 1800));
-}
-
-function closeLogOverlay(){
-  document.getElementById('log-overlay').classList.remove('shown');
-  clearLogLiveIntervals();
 }
 
 
