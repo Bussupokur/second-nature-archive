@@ -60,6 +60,7 @@
   { "id": 50, "title": "No, Not Aliens. Probably. (art. 2)", "cls": "article", "len": "M", "file": "articles/050-no-not-aliens.md" },
   { "id": "26.1", "title": "No More Shadows — Part One (Bastiaan)", "cls": "fork", "len": "L", "file": "forks/no-more-shadows/01-bastiaan.md" },
   { "id": "26.2", "title": "No More Shadows — Part Two", "cls": "fork", "len": "M", "file": "forks/no-more-shadows/02-part-two.md" },
+  {"id": "RS-1407", "title": "RS-1407v1/M3-7WZQ.1 \u00b7 Ring System, Luhman 16B", "cls": "nasaat", "len": "M", "file": "nasaat/nasaat_report_003.html"},
   { "id": "NT-3184", "title": "Field transmission — rogue planet", "cls": "nasaat", "len": "M", "external": "nasaat/nasaat_report_001_final.html" },
   { "id": "DM-0791", "title": "Field transmission — HD 206893 B", "cls": "nasaat", "len": "L", "external": "nasaat/nasaat_report_002_final.html" }
 ]
