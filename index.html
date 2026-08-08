@@ -218,13 +218,13 @@ button{cursor:pointer;font-family:'Space Mono',monospace;border:none;background:
 /* reconstructing modal */
 .recon-overlay{display:none;position:fixed;inset:0;background:rgba(2,4,8,0.55);z-index:900;align-items:center;justify-content:center;padding:24px}
 .recon-overlay.shown{display:flex}
-.recon-box{max-width:340px;width:100%;text-align:left;font-family:'Space Mono',monospace;background:var(--panel2);border:1px solid var(--border);box-shadow:0 8px 30px rgba(0,0,0,0.5)}
+.recon-box{max-width:400px;width:100%;text-align:left;font-family:'Space Mono',monospace;background:var(--panel2);border:1px solid var(--border);box-shadow:0 8px 30px rgba(0,0,0,0.5)}
 .recon-titlebar{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);font-size:10px;letter-spacing:0.06em;color:var(--dim)}
-.recon-close{cursor:pointer;color:var(--dim);transition:color .15s}
+.recon-close{cursor:pointer;color:var(--dim);transition:color .15s;font-size:18px;line-height:1;padding:2px 6px;margin:-2px -6px}
 .recon-close:hover{color:var(--symbol)}
 .recon-body{padding:16px 16px 18px;text-align:center}
 .recon-omega{font-size:30px;color:var(--symbol);margin-bottom:10px;animation:blink 2.4s infinite}
-.recon-status{font-size:11px;color:var(--dim);letter-spacing:0.04em;margin-bottom:14px;min-height:14px}
+.recon-status{font-size:11px;color:var(--dim);letter-spacing:0.04em;margin-bottom:14px;min-height:14px;white-space:nowrap}
 .recon-time{font-size:17px;color:var(--warn);letter-spacing:0.03em;margin-bottom:14px}
 .recon-proc{text-align:left;margin-bottom:8px}
 .recon-proc-label{display:flex;justify-content:space-between;font-size:9px;color:var(--dim);letter-spacing:0.03em;margin-bottom:4px}
