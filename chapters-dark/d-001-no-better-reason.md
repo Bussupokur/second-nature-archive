@@ -63,5 +63,5 @@ Sent something. Not the honest version, not the audition either, somewhere betwe
 
 ---
 
-*Category: Human Voice — Divergent*
+*Category: Human Voice*
 *Reading time: approximately 7 minutes.*
