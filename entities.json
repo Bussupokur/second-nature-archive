@@ -16,6 +16,7 @@
     { "name":"[unresolved — 'the priest']", "note":"Self-applied designation only. Leads a gathering of unconfirmed size on a recurring basis.", "status":"single record", "first":35, "refs":[35] }
   ],
   "dark": [
-    { "name":"[unresolved]", "note":"No entities cross-referenced in this branch yet.", "status":"unresolved", "first":"D-001", "refs":["D-001"] }
+    { "name": "[unresolved — 'the heir']", "note": "Subject of a divergent record sequence, continuing from an earlier main-tree presence. Currently residing in a settlement outside standard Settling infrastructure.", "status": "recurring · divergent sequence", "first": "D-002", "refs": ["D-002"] },
+    { "name": "[unresolved — Joss's brother]", "note": "Sibling of the perpetrator identified in chapter 43. Lives alone, remotely, by deliberate choice rather than necessity. Diary-format record, structured to continue across future entries.", "status": "recurring · divergent sequence", "first": "D-001", "refs": ["D-001"] }
   ]
 }
