@@ -361,17 +361,22 @@ body.oof-active{background:#100E0A}
     </div>
 
     <div class="boot-row">
-      <div class="boot-row-label"><span>records located</span><span id="boot-count-located">0 / 0</span></div>
+      <div class="boot-row-label"><span>indexed files</span><span id="boot-count-indexed">0 / 0</span></div>
+      <div class="boot-bar-track"><div class="boot-bar-fill" id="boot-bar-indexed"></div></div>
+    </div>
+
+    <div class="boot-row">
+      <div class="boot-row-label"><span>located</span><span id="boot-count-located">0 / 0</span></div>
       <div class="boot-bar-track"><div class="boot-bar-fill" id="boot-bar-located"></div></div>
     </div>
 
     <div class="boot-row">
-      <div class="boot-row-label"><span>indexing main sequence &amp; divergent records</span><span id="boot-count-recovered">0 / 0</span></div>
+      <div class="boot-row-label"><span>files recovered</span><span id="boot-count-recovered">0 / 0</span></div>
       <div class="boot-bar-track"><div class="boot-bar-fill" id="boot-bar-recovered"></div></div>
     </div>
 
     <div class="boot-row">
-      <div class="boot-row-label"><span>indexing field transmissions</span><span id="boot-count-reports">0 / 0</span></div>
+      <div class="boot-row-label"><span>field reports</span><span id="boot-count-reports">0 / 0</span></div>
       <div class="boot-bar-track"><div class="boot-bar-fill" id="boot-bar-reports"></div></div>
     </div>
 
@@ -2018,53 +2023,57 @@ function runBootSequence(data){
 }
 
 function startBars(data){
-  const located=data.filter(r=>r.cls==='main'||r.cls==='fork'||r.cls==='article');
-  const recovered=located.filter(r=>r.hasContent!==false);
+  const located=data.filter(r=>r.cls==='main'||r.cls==='fork'||r.cls==='article'); // has a title, content or not
+  const recovered=located.filter(r=>r.hasContent!==false); // actual written chapters only
   const reports=data.filter(r=>r.cls==='nasaat');
 
+  // "indexed files" — the full numbered range, blanks included, plus reports.
+  // Reuses the same HIGHEST_RECORD_ID the archive sweep itself is built on,
+  // so this number stays honestly tied to the real sweep, not a separate guess.
+  const indexedTotal=HIGHEST_RECORD_ID+reports.length;
   const locatedTotal=located.length;
   const recoveredTotal=recovered.length;
   const reportTotal=reports.length;
-  // "found" is deliberately theatrical, not a real count — the sweeping,
-  // overstated first pass, same spirit as the reconstructing modal's wildly
-  // wrong initial estimate before it narrows down to something real.
-  const foundTotal=Math.floor(2000000+Math.random()*6000000);
 
-  animateFoundBar('boot-bar-found','boot-count-found',foundTotal,1400);
+  animateFoundBar('boot-bar-found','boot-count-found',1400);
   bootTimeout(()=>{
-    animateBootBar('boot-bar-located','boot-count-located',locatedTotal,1200);
+    animateBootBar('boot-bar-indexed','boot-count-indexed',indexedTotal,1100);
   },500);
   bootTimeout(()=>{
-    animateBootBar('boot-bar-recovered','boot-count-recovered',recoveredTotal,1400);
+    animateBootBar('boot-bar-located','boot-count-located',locatedTotal,1100);
   },900);
   bootTimeout(()=>{
-    animateBootBar('boot-bar-reports','boot-count-reports',reportTotal,1000);
-  },1400);
+    animateBootBar('boot-bar-recovered','boot-count-recovered',recoveredTotal,1200);
+  },1300);
+  bootTimeout(()=>{
+    animateBootBar('boot-bar-reports','boot-count-reports',reportTotal,900);
+  },1700);
 
   animateBootTech();
 
-  bootTimeout(startBootCountdown, 2700);
+  bootTimeout(startBootCountdown, 3200);
 }
 
-function animateFoundBar(barId,countId,total,duration){
-  // large, theatrical number — counts up in big irregular jumps rather than
-  // one at a time, so it still finishes quickly despite being in the millions
+function animateFoundBar(barId,countId,duration){
+  // theatrical — a huge number climbing fast, then genuinely overflowing,
+  // like an old calculator running out of display room. Never a real count.
   const bar=document.getElementById(barId);
   const countEl=document.getElementById(countId);
-  let current=0;
-  const steps=14;
+  const steps=10;
   const stepTime=Math.max(20,duration/steps);
   let step=0;
+  let val=Math.floor(400+Math.random()*900);
   const timer=bootInterval(()=>{
     step++;
-    if(step>=steps){
-      current=total;
+    val=Math.floor(val*(2.6+Math.random()*1.8));
+    bar.style.width=Math.min(100,(step/steps*100))+'%';
+    if(step>=steps || String(val).length>=10){
       clearInterval(timer);
+      bar.style.width='100%';
+      countEl.textContent='9.99999999E+99 — OVERFLOW';
     } else {
-      current=Math.min(total,Math.floor(total*(step/steps)*(0.85+Math.random()*0.3)));
+      countEl.textContent=val.toLocaleString()+' / ???';
     }
-    bar.style.width=Math.min(100,current/total*100)+'%';
-    countEl.textContent=current.toLocaleString()+' / '+total.toLocaleString();
   },stepTime);
 }
 
@@ -2075,10 +2084,16 @@ function animateBootBar(barId,countId,total,duration){
     countEl.textContent='0 / 0';
     return;
   }
+  // fixed number of visual ticks regardless of scale — increment size scales
+  // up for large totals so this always finishes within `duration`, whether
+  // total is 5 or 5,000. The old version incremented by exactly 1 per tick,
+  // which made large totals take tens of seconds — fixed here.
+  const ticks=Math.min(total,24);
+  const stepAmount=Math.max(1,Math.round(total/ticks));
+  const stepTime=Math.max(30,duration/ticks);
   let current=0;
-  const stepTime=Math.max(30,duration/total);
   const timer=bootInterval(()=>{
-    current++;
+    current+=stepAmount;
     if(current>=total){current=total;clearInterval(timer);}
     bar.style.width=(current/total*100)+'%';
     countEl.textContent=current+' / '+total;
@@ -2176,10 +2191,12 @@ function rejectBoot(){
 
 function resetBootUI(){
   document.getElementById('boot-bar-found').style.width='0%';
+  document.getElementById('boot-bar-indexed').style.width='0%';
   document.getElementById('boot-bar-located').style.width='0%';
   document.getElementById('boot-bar-recovered').style.width='0%';
   document.getElementById('boot-bar-reports').style.width='0%';
   document.getElementById('boot-count-found').textContent='0 / 0';
+  document.getElementById('boot-count-indexed').textContent='0 / 0';
   document.getElementById('boot-count-located').textContent='0 / 0';
   document.getElementById('boot-count-recovered').textContent='0 / 0';
   document.getElementById('boot-count-reports').textContent='0 / 0';
