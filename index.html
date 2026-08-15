@@ -29,6 +29,11 @@ button{cursor:pointer;font-family:'Space Mono',monospace;border:none;background:
 .boot-row-label span:last-child{color:var(--symbol)}
 .boot-bar-track{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
 .boot-bar-fill{height:100%;background:var(--symbol);width:0%;border-radius:2px;transition:width .25s linear}
+#boot-bar-found{background:var(--dim)}
+#boot-bar-indexed{background:var(--border)}
+#boot-bar-located{background:var(--symbol)}
+#boot-bar-recovered{background:var(--data)}
+#boot-bar-reports{background:var(--active)}
 .boot-tech-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;margin:32px 0 40px;padding-top:20px;border-top:1px solid var(--border2)}
 .boot-tech-item{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:0.03em}
 .boot-tech-item span:last-child{color:var(--dim)}
@@ -2023,16 +2028,20 @@ function runBootSequence(data){
 }
 
 function startBars(data){
-  const located=data.filter(r=>r.cls==='main'||r.cls==='fork'||r.cls==='article'); // has a title, content or not
-  const recovered=located.filter(r=>r.hasContent!==false); // actual written chapters only
+  // "located" is deliberately fixed rather than filtered — 200 titled
+  // placeholder records, a known constant, plus whatever's actually been
+  // written. This doesn't depend on those 200 entries genuinely carrying
+  // hasContent:false in the live manifest — it's just always right.
+  const PLACEHOLDER_COUNT=200;
+  const recovered=data.filter(r=>(r.cls==='main'||r.cls==='fork'||r.cls==='article') && r.hasContent!==false); // actual written chapters only
   const reports=data.filter(r=>r.cls==='nasaat');
 
   // "indexed files" — the full numbered range, blanks included, plus reports.
   // Reuses the same HIGHEST_RECORD_ID the archive sweep itself is built on,
   // so this number stays honestly tied to the real sweep, not a separate guess.
   const indexedTotal=HIGHEST_RECORD_ID+reports.length;
-  const locatedTotal=located.length;
   const recoveredTotal=recovered.length;
+  const locatedTotal=recoveredTotal+PLACEHOLDER_COUNT;
   const reportTotal=reports.length;
 
   animateFoundBar('boot-bar-found','boot-count-found',1400);
