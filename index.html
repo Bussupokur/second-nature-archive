@@ -2032,24 +2032,30 @@ function startBars(data){
   // placeholder records, a known constant, plus whatever's actually been
   // written. This doesn't depend on those 200 entries genuinely carrying
   // hasContent:false in the live manifest — it's just always right.
+  // Both this and "indexed" are main-timeline-only concepts — the dark
+  // manifest has no 956-slot numbered range and no placeholder titles yet,
+  // so both correctly show zero rather than inheriting main's fixed numbers.
   const PLACEHOLDER_COUNT=200;
+  const isMain=currentMode==='main';
   const recovered=data.filter(r=>(r.cls==='main'||r.cls==='fork'||r.cls==='article') && r.hasContent!==false); // actual written chapters only
   const reports=data.filter(r=>r.cls==='nasaat');
 
   // "indexed files" — the full numbered range, blanks included, plus reports.
   // Reuses the same HIGHEST_RECORD_ID the archive sweep itself is built on,
   // so this number stays honestly tied to the real sweep, not a separate guess.
-  const indexedTotal=HIGHEST_RECORD_ID+reports.length;
+  const indexedTotal=isMain ? (HIGHEST_RECORD_ID+reports.length) : 0;
   const recoveredTotal=recovered.length;
-  const locatedTotal=recoveredTotal+PLACEHOLDER_COUNT;
+  const locatedTotal=isMain ? (recoveredTotal+PLACEHOLDER_COUNT) : 0;
   const reportTotal=reports.length;
 
   animateFoundBar('boot-bar-found','boot-count-found',1400);
   bootTimeout(()=>{
-    animateBootBar('boot-bar-indexed','boot-count-indexed',indexedTotal,1100);
+    if(isMain) animateBootBar('boot-bar-indexed','boot-count-indexed',indexedTotal,1100);
+    else showBootError('boot-bar-indexed','boot-count-indexed','ERR_NO_RANGE — \u03A9');
   },500);
   bootTimeout(()=>{
-    animateBootBar('boot-bar-located','boot-count-located',locatedTotal,1100);
+    if(isMain) animateBootBar('boot-bar-located','boot-count-located',locatedTotal,1100);
+    else showBootError('boot-bar-located','boot-count-located','ERR_UNSET — \u03A9');
   },900);
   bootTimeout(()=>{
     animateBootBar('boot-bar-recovered','boot-count-recovered',recoveredTotal,1200);
@@ -2061,6 +2067,19 @@ function startBars(data){
   animateBootTech();
 
   bootTimeout(startBootCountdown, 3200);
+}
+
+function showBootError(barId,countId,message){
+  // dark-mode-only — these two concepts genuinely don't exist yet for the
+  // Divergent branch, so this shows it honestly as an error rather than a
+  // quiet zero. Deliberately reuses Ω, the site's own existing symbol for
+  // "unknown," rather than inventing new iconography.
+  const bar=document.getElementById(barId);
+  const countEl=document.getElementById(countId);
+  bar.style.background='var(--warn)';
+  bar.style.width='100%';
+  countEl.style.color='var(--warn)';
+  countEl.textContent=message;
 }
 
 function animateFoundBar(barId,countId,duration){
@@ -2201,12 +2220,16 @@ function rejectBoot(){
 function resetBootUI(){
   document.getElementById('boot-bar-found').style.width='0%';
   document.getElementById('boot-bar-indexed').style.width='0%';
+  document.getElementById('boot-bar-indexed').style.background='';
   document.getElementById('boot-bar-located').style.width='0%';
+  document.getElementById('boot-bar-located').style.background='';
   document.getElementById('boot-bar-recovered').style.width='0%';
   document.getElementById('boot-bar-reports').style.width='0%';
   document.getElementById('boot-count-found').textContent='0 / 0';
   document.getElementById('boot-count-indexed').textContent='0 / 0';
+  document.getElementById('boot-count-indexed').style.color='';
   document.getElementById('boot-count-located').textContent='0 / 0';
+  document.getElementById('boot-count-located').style.color='';
   document.getElementById('boot-count-recovered').textContent='0 / 0';
   document.getElementById('boot-count-reports').textContent='0 / 0';
   document.getElementById('boot-tech-mem').textContent='0%';
