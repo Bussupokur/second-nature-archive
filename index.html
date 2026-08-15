@@ -356,8 +356,18 @@ body.oof-active{background:#100E0A}
     <div class="boot-log" id="boot-log"></div>
 
     <div class="boot-row">
-      <div class="boot-row-label"><span>indexing main sequence &amp; divergent records</span><span id="boot-count-chapters">0 / 0</span></div>
-      <div class="boot-bar-track"><div class="boot-bar-fill" id="boot-bar-chapters"></div></div>
+      <div class="boot-row-label"><span>scanning archive substrate</span><span id="boot-count-found">0 / 0</span></div>
+      <div class="boot-bar-track"><div class="boot-bar-fill" id="boot-bar-found"></div></div>
+    </div>
+
+    <div class="boot-row">
+      <div class="boot-row-label"><span>records located</span><span id="boot-count-located">0 / 0</span></div>
+      <div class="boot-bar-track"><div class="boot-bar-fill" id="boot-bar-located"></div></div>
+    </div>
+
+    <div class="boot-row">
+      <div class="boot-row-label"><span>indexing main sequence &amp; divergent records</span><span id="boot-count-recovered">0 / 0</span></div>
+      <div class="boot-bar-track"><div class="boot-bar-fill" id="boot-bar-recovered"></div></div>
     </div>
 
     <div class="boot-row">
@@ -2008,19 +2018,54 @@ function runBootSequence(data){
 }
 
 function startBars(data){
-  const chapters=data.filter(r=>r.cls==='main'||r.cls==='fork'||r.cls==='article');
+  const located=data.filter(r=>r.cls==='main'||r.cls==='fork'||r.cls==='article');
+  const recovered=located.filter(r=>r.hasContent!==false);
   const reports=data.filter(r=>r.cls==='nasaat');
-  const chapterTotal=chapters.length;
-  const reportTotal=reports.length;
 
-  animateBootBar('boot-bar-chapters','boot-count-chapters',chapterTotal,2000);
+  const locatedTotal=located.length;
+  const recoveredTotal=recovered.length;
+  const reportTotal=reports.length;
+  // "found" is deliberately theatrical, not a real count — the sweeping,
+  // overstated first pass, same spirit as the reconstructing modal's wildly
+  // wrong initial estimate before it narrows down to something real.
+  const foundTotal=Math.floor(2000000+Math.random()*6000000);
+
+  animateFoundBar('boot-bar-found','boot-count-found',foundTotal,1400);
   bootTimeout(()=>{
-    animateBootBar('boot-bar-reports','boot-count-reports',reportTotal,1300);
+    animateBootBar('boot-bar-located','boot-count-located',locatedTotal,1200);
   },500);
+  bootTimeout(()=>{
+    animateBootBar('boot-bar-recovered','boot-count-recovered',recoveredTotal,1400);
+  },900);
+  bootTimeout(()=>{
+    animateBootBar('boot-bar-reports','boot-count-reports',reportTotal,1000);
+  },1400);
 
   animateBootTech();
 
-  bootTimeout(startBootCountdown, 4200);
+  bootTimeout(startBootCountdown, 2700);
+}
+
+function animateFoundBar(barId,countId,total,duration){
+  // large, theatrical number — counts up in big irregular jumps rather than
+  // one at a time, so it still finishes quickly despite being in the millions
+  const bar=document.getElementById(barId);
+  const countEl=document.getElementById(countId);
+  let current=0;
+  const steps=14;
+  const stepTime=Math.max(20,duration/steps);
+  let step=0;
+  const timer=bootInterval(()=>{
+    step++;
+    if(step>=steps){
+      current=total;
+      clearInterval(timer);
+    } else {
+      current=Math.min(total,Math.floor(total*(step/steps)*(0.85+Math.random()*0.3)));
+    }
+    bar.style.width=Math.min(100,current/total*100)+'%';
+    countEl.textContent=current.toLocaleString()+' / '+total.toLocaleString();
+  },stepTime);
 }
 
 function animateBootBar(barId,countId,total,duration){
@@ -2130,9 +2175,13 @@ function rejectBoot(){
 }
 
 function resetBootUI(){
-  document.getElementById('boot-bar-chapters').style.width='0%';
+  document.getElementById('boot-bar-found').style.width='0%';
+  document.getElementById('boot-bar-located').style.width='0%';
+  document.getElementById('boot-bar-recovered').style.width='0%';
   document.getElementById('boot-bar-reports').style.width='0%';
-  document.getElementById('boot-count-chapters').textContent='0 / 0';
+  document.getElementById('boot-count-found').textContent='0 / 0';
+  document.getElementById('boot-count-located').textContent='0 / 0';
+  document.getElementById('boot-count-recovered').textContent='0 / 0';
   document.getElementById('boot-count-reports').textContent='0 / 0';
   document.getElementById('boot-tech-mem').textContent='0%';
   document.getElementById('boot-tech-queries').textContent='0';
