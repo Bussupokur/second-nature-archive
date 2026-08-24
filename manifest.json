@@ -68,6 +68,7 @@
   { "id": 672, "title": "We Are Still Calling It What It Was (art. 7)", "cls": "article", "len": "S", "file": "articles/672-we-are-still-calling-it.md"},
   { "id": 799, "title": "The Rush to Rule Out an Attack Was Premature (art. 8)", "cls": "article", "len": "S", "file": "articles/799-rush-to-rule-out.md"},
   { "id": 866, "title": "Nobody Is Talking About This Anymore, and I Don't Know What to Do With That (art. 9)", "cls": "article", "len": "S", "file": "articles/866-nobody-talking-about-this.md"},
+  { "id": 934, "title": "The Last Invention (art. 10)", "cls": "article", "len": "L", "file": "articles/934-the-last-invention.md"},
   { "id": "26.2", "title": "No More Shadows — Part Two", "cls": "fork", "len": "M", "file": "forks/no-more-shadows/02-part-two.md" },
   { "id": "RS-1407", "title": "RS-1407v1/M3-7WZQ.1 \u00b7 Ring System, Luhman 16B", "cls": "nasaat", "len": "M", "file": "nasaat/nasaat_report_003.html", "external": "nasaat/nasaat_report_003.html"},
   { "id": "NT-3184", "title": "Field transmission — rogue planet", "cls": "nasaat", "len": "M", "external": "nasaat/nasaat_report_001_final.html" },
