@@ -68,6 +68,7 @@
   { "id": 547, "title": "Somebody Did This, or Nobody Did (art. 6)", "cls": "article", "len": "S", "file": "articles/547-somebody-or-nobody.md"},
   { "id": 672, "title": "We Are Still Calling It What It Was (art. 7)", "cls": "article", "len": "S", "file": "articles/672-we-are-still-calling-it.md"},
   { "id": 799, "title": "The Rush to Rule Out an Attack Was Premature (art. 8)", "cls": "article", "len": "S", "file": "articles/799-rush-to-rule-out.md"},
+  { "id": 801, "title": "Read Only (art. 11)", "cls": "article", "len": "M", "file": "articles/801-read-only.md"},
   { "id": 866, "title": "Nobody Is Talking About This Anymore, and I Don't Know What to Do With That (art. 9)", "cls": "article", "len": "S", "file": "articles/866-nobody-talking-about-this.md"},
   { "id": 934, "title": "The Last Invention (art. 10)", "cls": "article", "len": "L", "file": "articles/934-the-last-invention.md"},
   { "id": "26.2", "title": "No More Shadows — Part Two", "cls": "fork", "len": "M", "file": "forks/no-more-shadows/02-part-two.md" },
