@@ -18,6 +18,10 @@
   ],
   "dark": [
     { "name": "[unresolved — 'the heir']", "note": "Subject of a divergent record sequence, continuing from an earlier main-tree presence. Currently residing in a settlement outside standard Settling infrastructure.", "status": "recurring · divergent sequence", "first": "D-002", "refs": ["D-002"] },
-    { "name": "[unresolved — Joss's brother]", "note": "Sibling of the perpetrator identified in chapter 43. Lives alone, remotely, by deliberate choice rather than necessity. Diary-format record, structured to continue across future entries.", "status": "recurring · divergent sequence", "first": "D-001", "refs": ["D-001"] }
+    { "name": "[unresolved — Joss's brother]", "note": "Sibling of the perpetrator identified in chapter 43. Lives alone, remotely, by deliberate choice rather than necessity. Diary-format record, structured to continue across future entries.", "status": "recurring · divergent sequence", "first": "D-001", "refs": ["D-001"] },
+    { "name": "Dorian Kesh", "note": "Recurring figure in a small, ideologically fractured network opposing the system. Evaluates and recruits on behalf of the group; cautious by temperament, frequently the one urging restraint.", "status": "recurring", "first": "D-003", "refs": ["D-003", "D-004", "D-006", "D-007"] },
+    { "name": "Petra Aldric", "note": "Recurring figure in the same network as Dorian Kesh. Sets direction and makes recruitment decisions; had prior direct contact with the perpetrator of chapter 43 before his crime, and declined to admit him.", "status": "recurring", "first": "D-003", "refs": ["D-003", "D-004", "D-006"] },
+    { "name": "Nadia Brackwell", "note": "Recurring figure recruited to observe the individual identified elsewhere as \"the heir.\" First direct contact with him established in a public setting; relationship ongoing.", "status": "recurring", "first": "D-004", "refs": ["D-004", "D-005", "D-006"] },
+    { "name": "Tymborychos", "note": "Recurring figure, nickname only. Origin, age, and true name unconfirmed. Appears without invitation or apparent summons; treated with marked deference by those he visits.", "status": "recurring", "first": "D-007", "refs": ["D-007"] }
   ]
 }
